@@ -19,6 +19,16 @@ COOKIE_FILENAME_FORMAT = "user_{0}.pkl"
 opts = Options()
 opts.headless = False
 
+class tweet:
+    def __init__():
+        self.poster = ""
+        self.date = ""
+        self.description = ""
+        self.likes = 0
+        self.retweets = 0
+        self.comments = 0
+
+
 class twitter_browser_wrapper:
     driver = None
     def __init__(self):
@@ -82,35 +92,52 @@ class twitter_browser_wrapper:
 
     def follow(self, username):
         self.driver.get(TWITTER_BASE_URL + username)
-        follow_btn = None
+        follow_btn_opponents = None
 
         # Check if this works
-        follow_btn = self.driver.find_element_by_xpath("//div[contains(., 'Follow')]")
-        if follow_btn:
-            follow_btn.click()
+        follow_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Follow')]")
+        if follow_btn_opponents:
+            for follow_btn in follow_btn_opponents:
+                if follow_btn.get_attribute("aria-label") == ("Follow @" + username):
+                    follow_btn.click()
+                    return True
 
     def unfollow(self, username):
         self.driver.get(TWITTER_BASE_URL + username)
-        unfollow_btn = None
-        follow_btn = None
-        retval = False
+        unfollow_btn_opponents = None
 
         # Check if this works
-        # follow_btn = self.driver.find_element_by_xpath("//div[contains(., 'Follow')]")
-        unfollow_btn = self.driver.find_element_by_xpath("//div[contains(., 'Following')]")
-        if unfollow_btn:
-            follow_btn.click()
-            retval = True
+        unfollow_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Following')]")
+        if unfollow_btn_opponents:
+            for unfollow_btn in unfollow_btn_opponents:
+                if unfollow_btn.get_attribute("aria-label") == ("Following @" + username):
+                    unfollow_btn.click()
+                    return True
 
-        return retval
+    def tweet(self, tweet):
+        self.driver.get(TWITTER_HOMEPAGE_URL)
 
-    def tweet():
+        #Beaware this could be chaged and get broken!
+        tweet_text_area = self.driver.find_elements_by_class_name("public-DraftStyleDefault-block")
+        if tweet_text_area:
+            tweet_text_area = tweet_text_area[0]
+            tweet_text_area.click()
+
+        body = self.driver.find_element_by_tag_name("body")
+        body.send_keys(tweet)
+
+        tweet_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Tweet')]")
+        if tweet_btn_opponents:
+            for tweet_btn in tweet_btn_opponents:
+                if tweet_btn.get_attribute("data-testid") == "tweetButtonInline":
+                    tweet_btn.click()
+                    return True
+
+
+    def get_feed(self):
         pass
 
-    def get_feed():
-        pass
-
-    def get_username_tweets():
+    def get_username_tweets(self, username):
         pass
 
     def get_hashtag_tweets():
@@ -135,20 +162,38 @@ def test_twitter_unfollow():
 
     t = twitter_browser_wrapper()
     t.login(TEST_USERNAME, TEST_PASSWORD)
-    if t.__check_for_login_indicator():
+    if t._twitter_browser_wrapper__check_for_login_indicator():
         t.unfollow(TEST_FOLLOWEE)
         return not t.am_i_following(TEST_FOLLOWEE)
 
 def test_twitter_login():
     t = twitter_browser_wrapper()
     t.login(TEST_USERNAME, TEST_PASSWORD)
-    if t.__check_for_login_indicator():
+    if t._twitter_browser_wrapper__check_for_login_indicator():
         logging.log("TEST_LOGIN: SUCCESS!")
         return True
     else:
         logging.log("TEST_LOGIN: HAS FAILED!")
         return False
 
+def test_twitter_tweet():
+    t = twitter_browser_wrapper()
+    t.login(TEST_USERNAME, TEST_PASSWORD)
+    t.tweet("Hello world!")
+    sleep(1)
+
+    my_tweets = t.get_username_tweets()
+    if my_tweets:
+        if my_tweets[-1] == "Hello world!":
+            logging.log("TEST_TWEET: SUCCESS!")
+            return True
+        else:
+            logging.log("TEST_TWEET: FAIL!")
+            return False
+
+
+
 #test_twitter_login() #Works!
-test_twitter_follow()
-test_twitter_unfollow()
+#test_twitter_follow() #Works!
+#test_twitter_unfollow() - unchecked
+#test_twitter_tweet() #Works! test might not show real results because there is no way to check if it worked for now.
