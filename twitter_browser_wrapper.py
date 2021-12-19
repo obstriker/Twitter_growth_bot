@@ -1,6 +1,10 @@
 # This module handles the selenium browser and navigates to do simple jobs at the twitter page.
 # This module aims to be generic enough to handle Twitter webpage changes in the future.
 
+# TODO: refactor to avoid crashes
+# Last test not working, produces the same results everytime
+# Last context: tried to implement search_tweets
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
@@ -12,6 +16,7 @@ from time import sleep
 TWITTER_BASE_URL = "https://mobile.twitter.com/"
 TWITTER_SIGN_IN_URL = "https://mobile.twitter.com/i/flow/login"
 TWITTER_HOMEPAGE_URL = "https://mobile.twitter.com/"
+TWITTER_SEARCH_URL = "https://twitter.com/search?q={0}&src=typed_query"
 TEST_USERNAME = "ohad02457744"
 TEST_PASSWORD = "ohadva12"
 COOKIE_FILENAME_FORMAT = "user_{0}.pkl"
@@ -20,13 +25,99 @@ opts = Options()
 opts.headless = False
 
 class tweet:
-    def __init__():
-        self.poster = ""
+    def __init__(self):
+        self.username = ""
         self.date = ""
         self.description = ""
         self.likes = 0
         self.retweets = 0
         self.comments = 0
+
+class tweet_scrape_classes:
+    def __init__(self, driver):
+        self.driver = driver
+        self.block = ""
+        self.username = ""
+        self.date = ""
+        self.description = ""
+        self.likes = ""
+        self.retweets = ""
+        self.comments = ""
+
+
+
+    def find_static_username_class(self, username):
+        usernames = self.driver.find_elements_by_xpath("//span[contains(., '"+ username +"')]")
+        
+        for user in usernames:
+            if user.get_attribute("innerText") == username:
+                self.username = user.get_attribute("class")
+                return (self.username, user)
+                
+    def find_relative_username(self, article):
+        usernames = article.find_elements_by_xpath("//span[@class='"+ self.username +"']")
+
+        for username in usernames:
+            if "@" in  username.get_attribute("innerText"):
+                return username.get_attribute("innerText")
+
+        return username
+        
+    def find_relative_date(self, article):
+        try:
+            date = article.find_element_by_tag_name("time")
+            return date.get_attribute("innerText")
+        except:
+            return ""
+
+    def find_relative_description(self, article):
+        description = article.find_element_by_xpath("//div[@class='"+ self.description +"']")
+        return description.get_attribute("innerText")
+
+    def find_relative_blocks(self):
+        if self.block:
+            articles = self.driver.find_elements_by_xpath("//article[@class='"+ self.block +"']")
+            return articles
+        else:
+            #TODO: Run find_static_block in other tab and close it
+            pass
+
+    def find_static_time_class(self):
+        dates = self.driver.find_elements_by_xpath("//time[contains(., 'Dec 12')]")
+        for date in dates:
+            if date.get_attribute("innerText") == "Dec 12":
+                self.date = date.get_attribute("class")
+                return self.date
+
+    def find_static_description_class(self):
+        articles = self.find_relative_blocks()
+
+        for article in articles:
+            descriptions = article.find_elements_by_xpath("//div[contains(., ' for Log4shell')]")
+
+            for description in descriptions:
+                if description.get_attribute("innerText") == "Vaccine for Log4shell\n#log4j #Log4Shell":
+                    if len(description.get_attribute("class")) > len(self.description):
+                        self.description = description.get_attribute("class")
+            return (self.description, description)
+
+    def find_static_block(self, initial=True):
+        article = None
+
+        if initial:
+            self.driver.get(TWITTER_SEARCH_URL.format("\"vaccine\" (from:Shadowhisper1)"))
+            sleep(3)
+            username = self.find_static_username_class("@ShadoWhisper1")
+            article = username[1]
+
+            while article.tag_name != "article":
+                article = article.find_element_by_xpath("..")
+
+            self.block = article.get_attribute("class")
+            return self.block
+            
+    def article_to_tweet():
+        pass
 
 
 class twitter_browser_wrapper:
@@ -140,11 +231,23 @@ class twitter_browser_wrapper:
     def get_username_tweets(self, username):
         pass
 
-    def get_hashtag_tweets():
+    def get_hashtag_tweets(self, hashtag):
         pass
 
-    def search_tweets():
+    def get_username_followers(self):
         pass
+        
+    #TODO
+    def search_tweets(self, term, limit=20):
+        self.driver.get(TWITTER_SEARCH_URL.format(term))
+
+
+        poster_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Follow')]")
+        if follow_btn_opponents:
+            for follow_btn in follow_btn_opponents:
+                if follow_btn.get_attribute("aria-label") == ("Follow @" + username):   
+                    pass
+        
 
 
 def test_twitter_follow():
@@ -191,9 +294,37 @@ def test_twitter_tweet():
             logging.log("TEST_TWEET: FAIL!")
             return False
 
+def test_twitter_find_scrape_classes():
+    t = twitter_browser_wrapper()
+    t.login(TEST_USERNAME, TEST_PASSWORD)
+    tsc = tweet_scrape_classes(t.driver)
+
+    #First static run
+    tsc.find_static_block()
+    #tsc.find_static_description_class()
+    #tsc.find_static_time_class()
+    #tsc.find_static_username_class("@ShadoWhisper1")
+
+    #Second - relative on dynamic page
+    t.driver.get(TWITTER_SEARCH_URL.format("hello"))
+    sleep(3)
+    articles = tsc.find_relative_blocks()
+
+    for article in articles:
+        print("username: ", tsc.find_relative_username(article))
+        print("date: ", tsc.find_relative_date(article))
+        print("description: ", tsc.find_relative_description(article))
+        print()
+
+
+
+    
+
+
 
 
 #test_twitter_login() #Works!
 #test_twitter_follow() #Works!
 #test_twitter_unfollow() - unchecked
 #test_twitter_tweet() #Works! test might not show real results because there is no way to check if it worked for now.
+test_twitter_find_scrape_classes()
