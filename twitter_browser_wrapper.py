@@ -12,17 +12,75 @@ import os
 import logging
 import pickle
 from time import sleep
+import re
 
 TWITTER_BASE_URL = "https://mobile.twitter.com/"
 TWITTER_SIGN_IN_URL = "https://mobile.twitter.com/i/flow/login"
 TWITTER_HOMEPAGE_URL = "https://mobile.twitter.com/"
 TWITTER_SEARCH_URL = "https://twitter.com/search?q={0}&src=typed_query"
 TEST_USERNAME = "ohad02457744"
+TEST_USERNAME2 = "Sanrio_OTD"
 TEST_PASSWORD = "ohadva12"
 COOKIE_FILENAME_FORMAT = "user_{0}.pkl"
+USERNAME_FOLLOWERS_URL = "https://twitter.com/{0}/followers"
 
 opts = Options()
 opts.headless = False
+
+class twitter_user:
+    def __init__(self):
+        self.follower_count = 0
+        self.username = ""
+        self.followers = []
+        self.tweets = []
+        self.following = 0
+
+
+class twitter_user_scrape_classes:
+    def __init__(self, driver):
+        self.follower_count = ""
+        self.username = ""
+        self.followers = ""
+        self.tweets = ""
+        self.following = ""
+        self.driver = driver
+
+#Another way to implement this is by using dictionary and counting which class has the most objects
+# This indicates on the Follow buttons on the followers 
+    def find_static_followers_class(self):
+        self.driver.get(USERNAME_FOLLOWERS_URL.format(TEST_USERNAME2))
+        sleep(4)
+        followers = self.driver.find_elements_by_xpath("//span[contains(., '@')]")
+        username_pattern = re.compile(r"@\w+")
+
+        for follower in followers:
+            if username_pattern.match(follower.get_attribute("innerText")):             
+                while follower.tag_name != "html" and follower.get_attribute("data-testid") != "UserCell":
+                    follower = follower.find_element_by_xpath("..")
+            
+                if follower.get_attribute("data-testid") == "UserCell":
+                    self.followers = follower.get_attribute("class")
+                    return self.followers
+
+    #TODO: extend to include all followers
+    def find_relative_followers_class(self, username):
+        extracted_followers = []
+        username_pattern = re.compile(r"@\w+")
+        followers = self.driver.find_elements_by_xpath("//div[@class='"+ self.followers +"']")
+
+        for follower in followers:
+            lines = follower.get_attribute("innerText").split("\n")
+            for line in lines:
+                if username_pattern.match(line):
+                    extracted_followers.append(line)
+                    break
+
+        return extracted_followers
+
+
+
+
+        return followers
 
 class tweet:
     def __init__(self):
@@ -116,9 +174,23 @@ class tweet_scrape_classes:
             self.block = article.get_attribute("class")
             return self.block
             
-    def article_to_tweet():
-        pass
+    def article_to_tweet(self, article):
+        t = tweet()
+        text = article.get_attribute("innerText").split("\n")
+        date_pattern = re.compile(r"\d+[hmdy]")
+        username_pattern = re.compile(r"@\w+")
 
+        for line in text:
+            if date_pattern.match(line):
+                t.date = line
+
+            elif username_pattern.match(line):
+                t.username = line
+
+            elif len(line) > len(t.description):
+                t.description = line
+
+        return t
 
 class twitter_browser_wrapper:
     driver = None
@@ -234,20 +306,21 @@ class twitter_browser_wrapper:
     def get_hashtag_tweets(self, hashtag):
         pass
 
-    def get_username_followers(self):
+    def get_username_followers(self, username):
         pass
         
-    #TODO
+    #TODO: how to load dynamic tweets? (click space and go down?)
     def search_tweets(self, term, limit=20):
+        tweets = []
+
         self.driver.get(TWITTER_SEARCH_URL.format(term))
+        tsc = tweet_scrape_classes(self.driver)
 
-
-        poster_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Follow')]")
-        if follow_btn_opponents:
-            for follow_btn in follow_btn_opponents:
-                if follow_btn.get_attribute("aria-label") == ("Follow @" + username):   
-                    pass
+        for article in articles:
+            tweets.append(tsc.article_to_tweet(article))
         
+        return tweets
+            
 
 
 def test_twitter_follow():
@@ -311,12 +384,23 @@ def test_twitter_find_scrape_classes():
     articles = tsc.find_relative_blocks()
 
     for article in articles:
-        print("username: ", tsc.find_relative_username(article))
-        print("date: ", tsc.find_relative_date(article))
-        print("description: ", tsc.find_relative_description(article))
+        at = tsc.article_to_tweet(article)
+        print("username: ", at.username)
+        print("date: ", at.date)
+        print("description: ", at.description)
         print()
 
+def test_twitter_find_followers():
+    t = twitter_browser_wrapper()
+    t.login(TEST_USERNAME, TEST_PASSWORD)
+    tsc = twitter_user_scrape_classes(t.driver)
 
+    tsc.find_static_followers_class()
+    #Second - relative on dynamic page
+    followers = tsc.find_relative_followers_class(TEST_USERNAME2)
+
+    for follower in followers:
+        print(follower)
 
     
 
@@ -327,4 +411,5 @@ def test_twitter_find_scrape_classes():
 #test_twitter_follow() #Works!
 #test_twitter_unfollow() - unchecked
 #test_twitter_tweet() #Works! test might not show real results because there is no way to check if it worked for now.
-test_twitter_find_scrape_classes()
+#test_twitter_find_tweets_classes()
+test_twitter_find_followers()
