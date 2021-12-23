@@ -17,7 +17,7 @@ import re
 TWITTER_BASE_URL = "https://mobile.twitter.com/"
 TWITTER_SIGN_IN_URL = "https://mobile.twitter.com/i/flow/login"
 TWITTER_HOMEPAGE_URL = "https://mobile.twitter.com/"
-TWITTER_SEARCH_URL = "https://twitter.com/search?q={0}&src=typed_query"
+TWITTER_SEARCH_URL = "https://twitter.com/search?q={0}&src=typed_query&f=live"
 TEST_USERNAME = "ohad02457744"
 TEST_USERNAME2 = "Sanrio_OTD"
 TEST_PASSWORD = "ohadva12"
@@ -45,6 +45,7 @@ class twitter_user_scrape_classes:
         self.tweets = ""
         self.following = ""
         self.driver = driver
+
 
 #Another way to implement this is by using dictionary and counting which class has the most objects
 # This indicates on the Follow buttons on the followers 
@@ -120,6 +121,8 @@ class tweet:
 class tweet_scrape_classes:
     def __init__(self, driver):
         self.driver = driver
+        self.follower = ""
+        self.following = ""
         self.block = ""
         self.username = ""
         self.date = ""
@@ -222,6 +225,7 @@ class twitter_browser_wrapper:
     driver = None
     def __init__(self):
         self.driver = webdriver.Firefox(options=opts)
+        self.logged_in = False
 
     def __save_cookies(self, cookie_filename):
         pickle.dump( self.driver.get_cookies() , open(cookie_filename,"wb"))
@@ -257,6 +261,7 @@ class twitter_browser_wrapper:
         self.driver.get(TWITTER_HOMEPAGE_URL)
         if self._twitter_browser_wrapper__load_cookies(COOKIE_FILENAME_FORMAT.format(username)) \
             and self._twitter_browser_wrapper__check_for_login_indicator(username):
+            self.logged_in = True
             return True
 
         # Can be changed or blocked overtime
@@ -275,8 +280,10 @@ class twitter_browser_wrapper:
 
         if self._twitter_browser_wrapper__check_for_login_indicator(username):
             self._twitter_browser_wrapper__save_cookies(COOKIE_FILENAME_FORMAT.format(username))
+            self.logged_in = True
             return True
         else:
+            self.logged_in = False
             return False
 
     def follow(self, username):
@@ -327,26 +334,67 @@ class twitter_browser_wrapper:
         pass
 
     def get_username_tweets(self, username):
-        pass
+        return self.search_tweets("(from:{0})".format(username.replace("@","")))
 
     def get_hashtag_tweets(self, hashtag):
-        pass
+        return self.search_tweets(hashtag)
 
     def get_username_followers(self, username):
-        pass
+        extracted_followers = []
+
+        if not self.logged_in:
+             return []
+        
+        if not hasattr(self, 'tsc'):
+            self.tsc = tweet_scrape_classes(self.driver)
+            
+        if not self.tsc.followers:
+            self.tsc.find_static_followers_class()
+
+        followers = tsc.find_relative_followers_class(username)
+
+        for follower in followers:
+            extracted_followers.append(follower)
+
+        return extracted_followers
+
+    def get_username_following(self, username):
+        extracted_following = []
+
+        if not self.logged_in:
+             return []
+        
+        if not hasattr(self, 'tsc'):
+            self.tsc = twitter_user_scrape_classes(self.driver)
+            
+        if not self.tsc.following:
+            self.tsc.find_static_following_class()
+
+        following = self.tsc.find_relative_following_class(username)
+
+        for followee in following:
+            extracted_following.append(followee)
+
+        return extracted_following
+
         
     #TODO: how to load dynamic tweets? (click space and go down?)
     def search_tweets(self, term, limit=20):
         tweets = []
 
-        self.driver.get(TWITTER_SEARCH_URL.format(term))
-        tsc = tweet_scrape_classes(self.driver)
-        articles = tsc.find_relative_blocks()
-        
-        for article in articles:
-            tweets.append(tsc.article_to_tweet(article))
-        
-        return tweets
+        if self.logged_in:
+            if not hasattr(self, 'tsc'):
+                self.tsc = tweet_scrape_classes(self.driver)
+                self.tsc.find_static_block()
+
+            self.driver.get(TWITTER_SEARCH_URL.format(term))
+            sleep(3)
+            articles = self.tsc.find_relative_blocks()
+
+            for article in articles:
+                tweets.append(self.tsc.article_to_tweet(article))
+            
+            return tweets
             
 
 
@@ -358,7 +406,6 @@ def test_twitter_follow():
     if t._twitter_browser_wrapper__check_for_login_indicator("ohad02457744"):
         t.follow(TEST_FOLLOWEE)
         return t.am_i_following(TEST_FOLLOWEE)
-
 
 def test_twitter_unfollow():
     TEST_FOLLOWEE = "DouglasBShaw"
@@ -420,24 +467,20 @@ def test_twitter_find_scrape_classes():
 def test_twitter_find_followers():
     t = twitter_browser_wrapper()
     t.login(TEST_USERNAME, TEST_PASSWORD)
-    tsc = twitter_user_scrape_classes(t.driver)
+    #tsc = twitter_user_scrape_classes(t.driver)
 
-    tsc.find_static_followers_class()
-    #Second - relative on dynamic page
-    followers = tsc.find_relative_followers_class(TEST_USERNAME2)
+    followers = t.get_username_followers(TEST_USERNAME2)
 
     for follower in followers:
-        print(follower)
+        print(follower.__dict__)
 
-    
+
 def test_twitter_find_following():
     t = twitter_browser_wrapper()
     t.login(TEST_USERNAME, TEST_PASSWORD)
-    tsc = twitter_user_scrape_classes(t.driver)
+    #tsc = twitter_user_scrape_classes(t.driver)
 
-    tsc.find_static_following_class()
-    #Second - relative on dynamic page
-    following = tsc.find_relative_following_class(TEST_USERNAME2)
+    following = t.get_username_following(TEST_USERNAME2)
 
     for followee in following:
         print(followee)
@@ -445,9 +488,10 @@ def test_twitter_find_following():
 def test_twitter_search_tweets():
     t = twitter_browser_wrapper()
     t.login(TEST_USERNAME, TEST_PASSWORD)
-    tsc = twitter_user_scrape_classes(t.driver)
+    for tweet in t.search_tweets("you gotcha"):
+        print(tweet.__dict__)
 
-    t.search_tweets("you gotcha")
+    
 
 
 
@@ -460,4 +504,5 @@ def test_twitter_search_tweets():
 #test_twitter_find_tweets_classes()
 #test_twitter_find_followers()
 #test_twitter_find_following()
-test_twitter_search_tweets()
+#test_twitter_find_following()
+#test_twitter_search_tweets()
