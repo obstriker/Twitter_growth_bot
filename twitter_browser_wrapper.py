@@ -5,6 +5,13 @@
 # Last test not working, produces the same results everytime
 # Last context: tried to implement search_tweets
 
+# This module has class for tweets and user
+# Each class know how to scrape objects statically (to obtain class names)
+# And then you can use it to find relatively. for example search for a tweet that i
+# know all it's details and I search for the details. then I accuire the class names 
+# and use it to scrape these objects later.
+# This mechanism built to avoid anti-scraping (scrambling class names or ids)
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
@@ -13,6 +20,7 @@ import logging
 import pickle
 from time import sleep
 import re
+import urllib
 
 TWITTER_BASE_URL = "https://mobile.twitter.com/"
 TWITTER_SIGN_IN_URL = "https://mobile.twitter.com/i/flow/login"
@@ -34,23 +42,23 @@ class twitter_user:
         self.username = ""
         self.followers = []
         self.tweets = []
-        self.following = 0
+        self.following = []
 
 
 class twitter_user_scrape_classes:
     def __init__(self, driver):
+        self.driver = driver
         self.follower_count = ""
         self.username = ""
         self.followers = ""
-        self.tweets = ""
         self.following = ""
-        self.driver = driver
+        self.tweets = ""
 
 
 #Another way to implement this is by using dictionary and counting which class has the most objects
 # This indicates on the Follow buttons on the followers 
-    def find_static_followers_class(self):
-        self.driver.get(USERNAME_FOLLOWERS_URL.format(TEST_USERNAME2))
+    def find_static_followers_class(self, username = TEST_USERNAME2):
+        self.driver.get(USERNAME_FOLLOWERS_URL.format(username))
         sleep(4)
         followers = self.driver.find_elements_by_xpath("//span[contains(., '@')]")
         username_pattern = re.compile(r"@\w+")
@@ -202,22 +210,27 @@ class tweet_scrape_classes:
 
             self.block = article.get_attribute("class")
             return self.block
-            
+
+    #TODO: fix description fetching, try to fetch lines until they meet regex of \n\d
     def article_to_tweet(self, article):
         t = tweet()
         text = article.get_attribute("innerText").split("\n")
-        date_pattern = re.compile(r"\d+[hmdy]")
+        time_pattern = re.compile(r"\d+[hmdy]")
+        date_pattern = re.compile(r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Dec)\s\d{1,2}")
         username_pattern = re.compile(r"@\w+")
+        like_pattern = re.compile(r"\n\d")
 
         for line in text:
-            if date_pattern.match(line):
+            if time_pattern.match(line) or date_pattern.match(line):
                 t.date = line
-
-            elif username_pattern.match(line):
+            elif username_pattern.match(line) and not t.username:
                 t.username = line
-
-            elif len(line) > len(t.description):
-                t.description = line
+            elif like_pattern.match(line):
+                break
+            elif t.username and len(line) > 5:
+                t.description = t.description + " " + line
+        
+        #t.description = ' '.join(text[4:-2])
 
         return t
 
@@ -276,7 +289,9 @@ class twitter_browser_wrapper:
         elem.send_keys(Keys.ENTER)
         sleep(1)
         elem.send_keys(password)
+        sleep(0.5)
         elem.send_keys(Keys.ENTER)
+        sleep(1)
 
         if self._twitter_browser_wrapper__check_for_login_indicator(username):
             self._twitter_browser_wrapper__save_cookies(COOKIE_FILENAME_FORMAT.format(username))
@@ -387,7 +402,7 @@ class twitter_browser_wrapper:
                 self.tsc = tweet_scrape_classes(self.driver)
                 self.tsc.find_static_block()
 
-            self.driver.get(TWITTER_SEARCH_URL.format(term))
+            self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(term)))
             sleep(3)
             articles = self.tsc.find_relative_blocks()
 
@@ -395,7 +410,6 @@ class twitter_browser_wrapper:
                 tweets.append(self.tsc.article_to_tweet(article))
             
             return tweets
-            
 
 
 def test_twitter_follow():
@@ -488,7 +502,13 @@ def test_twitter_find_following():
 def test_twitter_search_tweets():
     t = twitter_browser_wrapper()
     t.login(TEST_USERNAME, TEST_PASSWORD)
-    for tweet in t.search_tweets("you gotcha"):
+    for tweet in t.search_tweets("#log4j"):
+        print(tweet.__dict__)
+
+def test_twitter_search_username_tweets():
+    t = twitter_browser_wrapper()
+    t.login(TEST_USERNAME, TEST_PASSWORD)
+    for tweet in t.get_username_tweets("ShadoWhisper1"):
         print(tweet.__dict__)
 
     
@@ -506,3 +526,4 @@ def test_twitter_search_tweets():
 #test_twitter_find_following()
 #test_twitter_find_following()
 #test_twitter_search_tweets()
+test_twitter_search_username_tweets()
