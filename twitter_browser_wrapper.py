@@ -23,6 +23,7 @@ TEST_USERNAME2 = "Sanrio_OTD"
 TEST_PASSWORD = "ohadva12"
 COOKIE_FILENAME_FORMAT = "user_{0}.pkl"
 USERNAME_FOLLOWERS_URL = "https://twitter.com/{0}/followers"
+USERNAME_FOLLOWING_URL = "https://twitter.com/{0}/following"
 
 opts = Options()
 opts.headless = False
@@ -62,6 +63,36 @@ class twitter_user_scrape_classes:
                     self.followers = follower.get_attribute("class")
                     return self.followers
 
+    def find_static_following_class(self):
+        self.driver.get(USERNAME_FOLLOWING_URL.format(TEST_USERNAME2))
+        sleep(4)
+        following = self.driver.find_elements_by_xpath("//span[contains(., '@')]")
+        username_pattern = re.compile(r"@\w+")
+
+        for followee in following:
+            if username_pattern.match(followee.get_attribute("innerText")):             
+                while followee.tag_name != "html" and followee.get_attribute("data-testid") != "UserCell":
+                    followee = followee.find_element_by_xpath("..")
+            
+                if followee.get_attribute("data-testid") == "UserCell":
+                    self.following = followee.get_attribute("class")
+                    return self.following
+
+    #TODO: extend to include all followers
+    def find_relative_following_class(self, username):
+        extracted_followees = []
+        username_pattern = re.compile(r"@\w+")
+        following = self.driver.find_elements_by_xpath("//div[@class='"+ self.following +"']")
+
+        for followee in following:
+            lines = followee.get_attribute("innerText").split("\n")
+            for line in lines:
+                if username_pattern.match(line):
+                    extracted_followees.append(line)
+                    break
+
+        return extracted_followees
+
     #TODO: extend to include all followers
     def find_relative_followers_class(self, username):
         extracted_followers = []
@@ -76,11 +107,6 @@ class twitter_user_scrape_classes:
                     break
 
         return extracted_followers
-
-
-
-
-        return followers
 
 class tweet:
     def __init__(self):
@@ -315,7 +341,8 @@ class twitter_browser_wrapper:
 
         self.driver.get(TWITTER_SEARCH_URL.format(term))
         tsc = tweet_scrape_classes(self.driver)
-
+        articles = tsc.find_relative_blocks()
+        
         for article in articles:
             tweets.append(tsc.article_to_tweet(article))
         
@@ -403,6 +430,25 @@ def test_twitter_find_followers():
         print(follower)
 
     
+def test_twitter_find_following():
+    t = twitter_browser_wrapper()
+    t.login(TEST_USERNAME, TEST_PASSWORD)
+    tsc = twitter_user_scrape_classes(t.driver)
+
+    tsc.find_static_following_class()
+    #Second - relative on dynamic page
+    following = tsc.find_relative_following_class(TEST_USERNAME2)
+
+    for followee in following:
+        print(followee)
+
+def test_twitter_search_tweets():
+    t = twitter_browser_wrapper()
+    t.login(TEST_USERNAME, TEST_PASSWORD)
+    tsc = twitter_user_scrape_classes(t.driver)
+
+    t.search_tweets("you gotcha")
+
 
 
 
@@ -412,4 +458,6 @@ def test_twitter_find_followers():
 #test_twitter_unfollow() - unchecked
 #test_twitter_tweet() #Works! test might not show real results because there is no way to check if it worked for now.
 #test_twitter_find_tweets_classes()
-test_twitter_find_followers()
+#test_twitter_find_followers()
+#test_twitter_find_following()
+test_twitter_search_tweets()
