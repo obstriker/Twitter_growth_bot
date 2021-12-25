@@ -21,6 +21,7 @@ import pickle
 from time import sleep
 import re
 import urllib
+import hashlib
 
 TWITTER_BASE_URL = "https://mobile.twitter.com/"
 TWITTER_SIGN_IN_URL = "https://mobile.twitter.com/i/flow/login"
@@ -32,6 +33,7 @@ TEST_PASSWORD = "ohadva12"
 COOKIE_FILENAME_FORMAT = "user_{0}.pkl"
 USERNAME_FOLLOWERS_URL = "https://twitter.com/{0}/followers"
 USERNAME_FOLLOWING_URL = "https://twitter.com/{0}/following"
+SCROLL_PAUSE_TIME = 1
 
 opts = Options()
 opts.headless = False
@@ -395,7 +397,8 @@ class twitter_browser_wrapper:
         
     #TODO: how to load dynamic tweets? (click space and go down?)
     def search_tweets(self, term, limit=20):
-        tweets = []
+        tweets = {}
+        tweets_growing = True
 
         if self.logged_in:
             if not hasattr(self, 'tsc'):
@@ -404,12 +407,28 @@ class twitter_browser_wrapper:
 
             self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(term)))
             sleep(3)
-            articles = self.tsc.find_relative_blocks()
 
-            for article in articles:
-                tweets.append(self.tsc.article_to_tweet(article))
-            
-            return tweets
+            while tweets_growing or len(tweets) > limit:
+                tweets_growing = False
+
+                articles = self.tsc.find_relative_blocks()
+
+                for article in articles:
+                    #Create tweet object
+                    tw = self.tsc.article_to_tweet(article)
+
+                    #Check if this tweet exists in the list
+                    if hashlib.md5(tw.description.encode()).hexdigest() not in tweets.keys():
+                        tweets[hashlib.md5(tw.description.encode()).hexdigest()] = tw
+                        #tweets.append(self.tsc.article_to_tweet(article))
+                        tweets_growing = True
+
+                #Scroll down to find more tweets
+                elem = self.driver.find_element_by_tag_name("body")
+                elem.send_keys(Keys.END)
+                sleep(SCROLL_PAUSE_TIME)
+
+            return list(tweets.values())
 
 
 def test_twitter_follow():
