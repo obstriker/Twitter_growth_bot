@@ -129,5 +129,7 @@ dmypy.json
 .pyre/
 *.txt
 *.pkl
-.vscode/launch.json
+*.exe
+.vscode/*
+.idea/
 github_twitter_token.com

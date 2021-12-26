@@ -356,27 +356,40 @@ class twitter_browser_wrapper:
     def get_hashtag_tweets(self, hashtag):
         return self.search_tweets(hashtag)
 
-    def get_username_followers(self, username):
+    def get_username_followers(self, username, limit = 100):
         extracted_followers = []
+        followers_growing = True
 
         if not self.logged_in:
              return []
         
         if not hasattr(self, 'tsc'):
-            self.tsc = tweet_scrape_classes(self.driver)
+            self.tsc = twitter_user_scrape_classes(self.driver)
             
         if not self.tsc.followers:
             self.tsc.find_static_followers_class()
 
-        followers = tsc.find_relative_followers_class(username)
+        self.driver.get(USERNAME_FOLLOWERS_URL.format(username))
+        sleep(3)
 
-        for follower in followers:
-            extracted_followers.append(follower)
+        while followers_growing and len(extracted_followers) < limit:
+            followers_growing = False
+            followers = self.tsc.find_relative_followers_class(username)
+
+            for follower in followers:
+                extracted_followers.append(follower)
+                followers_growing = True
+
+            #Scroll down to find more tweets
+            elem = self.driver.find_element_by_tag_name("body")
+            elem.send_keys(Keys.END)
+            sleep(SCROLL_PAUSE_TIME)
 
         return extracted_followers
 
-    def get_username_following(self, username):
+    def get_username_following(self, username, limit = 100):
         extracted_following = []
+        following_growing = True
 
         if not self.logged_in:
              return []
@@ -387,10 +400,21 @@ class twitter_browser_wrapper:
         if not self.tsc.following:
             self.tsc.find_static_following_class()
 
-        following = self.tsc.find_relative_following_class(username)
+        self.driver.get(USERNAME_FOLLOWING_URL.format(username))
+        sleep(3)
 
-        for followee in following:
-            extracted_following.append(followee)
+        while following_growing and len(extracted_following) < limit:
+            following_growing = False
+            following = self.tsc.find_relative_following_class(username)
+
+            for followee in following:
+                extracted_following.append(followee)
+                following_growing = True
+
+            #Scroll down to find more tweets
+            elem = self.driver.find_element_by_tag_name("body")
+            elem.send_keys(Keys.END)
+            sleep(SCROLL_PAUSE_TIME)
 
         return extracted_following
 
@@ -408,7 +432,7 @@ class twitter_browser_wrapper:
             self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(term)))
             sleep(3)
 
-            while tweets_growing or len(tweets) > limit:
+            while tweets_growing and len(tweets) < limit:
                 tweets_growing = False
 
                 articles = self.tsc.find_relative_blocks()
@@ -513,7 +537,7 @@ def test_twitter_find_following():
     t.login(TEST_USERNAME, TEST_PASSWORD)
     #tsc = twitter_user_scrape_classes(t.driver)
 
-    following = t.get_username_following(TEST_USERNAME2)
+    following = t.get_username_followers(TEST_USERNAME2)
 
     for followee in following:
         print(followee)
@@ -545,4 +569,4 @@ def test_twitter_search_username_tweets():
 #test_twitter_find_following()
 #test_twitter_find_following()
 #test_twitter_search_tweets()
-test_twitter_search_username_tweets()
+#test_twitter_search_username_tweets()
