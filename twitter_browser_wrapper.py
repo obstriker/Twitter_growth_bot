@@ -374,7 +374,7 @@ class twitter_browser_wrapper:
 
         while followers_growing and len(extracted_followers) < limit:
             followers_growing = False
-            followers = self.tsc.find_relative_followers_class(username)
+            followers = self.tsc.find_relative_followers_class(username.replace("@",""))
 
             for follower in followers:
                 extracted_followers.append(follower)
@@ -408,7 +408,7 @@ class twitter_browser_wrapper:
             following = self.tsc.find_relative_following_class(username)
 
             for followee in following:
-                extracted_following.append(followee)
+                extracted_following.append(followee.replace("@",""))
                 following_growing = True
 
             #Scroll down to find more tweets
