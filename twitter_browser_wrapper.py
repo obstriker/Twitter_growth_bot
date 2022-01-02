@@ -258,7 +258,8 @@ class twitter_browser_wrapper:
             return False
 
     def __check_for_login_indicator(self, username):
-        self.driver.get(TWITTER_HOMEPAGE_URL)
+        if self.driver.current_url != TWITTER_HOMEPAGE_URL:
+            self.driver.get(TWITTER_HOMEPAGE_URL)
 
         if username in self.driver.page_source:
             return True
