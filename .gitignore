@@ -133,3 +133,4 @@ dmypy.json
 .vscode/*
 .idea/
 github_twitter_token.com
+twitter.db
