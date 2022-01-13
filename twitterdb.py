@@ -15,18 +15,23 @@ class BaseModel(Model):
 class User(BaseModel):
     username = TextField(unique=True)
 
-class Registered_user(BaseModel):
-    username = TextField(unique=True)
+class registered_user(BaseModel):
+    user = ForeignKeyField(User, backref='registered_users', unique = True)
+    username = TextField()
     password = TextField()
-    user_id = ForeignKeyField(User, backref='registered_users')
+    #desired_followers = NumericField()
 
 
-
-class Follower(BaseModel):
-    followed_user = ForeignKeyField(User, backref='followers')
-    following_user = ForeignKeyField(User, backref='followers')
-    domain = ForeignKeyField(Domain_of_interest, backref='followers')
+class action(BaseModel):
     created = DateTimeField(default=datetime.datetime.now)
+    action = TextField()
+    registered_user = ForeignKeyField(registered_user, backref='actions')
+    
+class Follower(BaseModel):
+    created = DateTimeField(default=datetime.datetime.now)
+    follower = ForeignKeyField(User, backref='followers')
+    followed = ForeignKeyField(User, backref='followers')
+    domain = TextField(default="")
     modified = DateTimeField
 
     def save(self, *args, **kwargs):
@@ -35,35 +40,30 @@ class Follower(BaseModel):
 
     class Meta:
         indexes = (
-        (('followed_user', 'following_user'), True),
+        (('follower', 'followed'), True),
     )
 
 class Tweet(BaseModel):
     user = ForeignKeyField(User, backref='tweets')
     description = TextField()
-    time = DateTimeField()
-
-class Domain_of_interest(BaseModel):
-    name = TextField(unique=True)
+    time = TextField(default="") #DateTimeField()
+    
+    class Meta:
+        indexes = (
+        (('user', 'description'), True),
+    )
 
 class Hastag(BaseModel):
     name = TextField(unique=True)
-    domain = ForeignKeyField(Domain_of_interest, backref='hashtags')
+    domain = TextField()
+    
+class action_arg(BaseModel):
+    action = ForeignKeyField(action, backref='action_args')
+    name = TextField(default = "")
+    follow = ForeignKeyField(Follower, backref='action_args', default=None, null = True)
+    #scrape_class = ForeignKeyField(scrape_class, backref='action_args', default=None)
+    tweet = ForeignKeyField(Tweet, backref='action_args', default=None, null=True)
 
-def populate_test_data():
-    db.create_tables([User, Tweet, Follower, Registered_user, User])
-
-    data = (
-        ('huey', ('meow', 'hiss', 'purr')),
-        ('mickey', ('woof', 'whine')),
-        ('zaizee', ()))
-    for username, tweets in data:
-        user = User.create(username=username)
-        for tweet in tweets:
-            Tweet.create(user=user, description=tweet, time=datetime.now())
-
-    # Populate a few favorites for our users, such that:
-    print(data)
 
 def insert_user(username):
     user = User.create(username=username)
@@ -73,8 +73,30 @@ def insert_users(usernames):
     for username in username:
         insert_user(username)
 
-def insert_follower(follower, follower, followee):
-    followee = 
-    follower = Follower.create(followed_user=user, following_user = user2)
+def create_tables():
+    db.create_tables([User, Tweet, Follower, registered_user, User, action, action_arg], safe=True)
+    
+def log_action(action_type, registered_user, arg = None):
+    try:
+        act = action.create(action = action_type, registered_user = registered_user)
+        
+        if action_type == "follow" or action_type == "unfollow":
+            act_arg = action_arg.create(action = act, follow = arg)
+        elif action_type == "scrape_class":
+            act_arg = action_arg.create(action = act, scraped_class = arg)
+        elif action_type == "tweet":
+            act_arg = action_arg.create(action = act, tweet = arg)
+            
+        act.save()
+        if act_arg:
+            act_arg.save()
+        return True
+    
+    except:
+        return False
+    
+def main():
+    create_tables()
 
-db.create_tables([User, Tweet, Follower, Registered_user, User])
+if __name__ == '__main__':
+    main()
