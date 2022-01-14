@@ -10,7 +10,6 @@ from twitter_browser_wrapper import *
 from twitterdb import *
 
 TWEET_LIMIT = 10
-
 class twitter_interest_discovery:
     def get_hashtags_from_user(t, user):
         hashtags = []
@@ -53,6 +52,9 @@ class twitter_interest_discovery:
         followers_from_hashtag = []
         users = twitter_interest_discovery.get_users_from_hashtag(t, hashtag, limit)
         for user in users:
+            if len(followers_from_hashtag) > limit:
+                break
+            
             followers = t.get_username_followers(user.username)
             for follower in followers:
                 followers_from_hashtag.append(follower.follower.username)

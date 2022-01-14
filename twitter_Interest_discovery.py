@@ -49,8 +49,6 @@ class twitter_interest_discovery:
 
         return users
 
-
-
     def get_followers_from_hashtag(t, hashtag):
         followers = []
         users = twitter_interest_discovery.get_users_from_hashtag(t, hashtag)

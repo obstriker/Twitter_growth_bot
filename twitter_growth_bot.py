@@ -33,8 +33,8 @@ def main():
         pass
 
     #if 'follow-unfollow' in args.keys():
-    if 'domain_hashtag' in args.__dict__.keys():
-        follow_unfollow_technique(args.username, args.password, args.domain_hashtag)
+    if 'hashtag' in args.__dict__.keys() and args.hashtag:
+        follow_unfollow_technique(args.username, args.password, args.hashtag)
 
 
 if __name__ == "__main__":

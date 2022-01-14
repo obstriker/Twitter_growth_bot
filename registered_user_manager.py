@@ -42,16 +42,20 @@ class registered_user_manager:
         limit = MAX_UNFOLLOW_PER_DAY):
         # unfollow people that the bot has followed if their time is up
         # unfollow the people who does not follow back first (which are expired)
+        # Make sure to not unfollow people who unfollowed already (waste of time)
         followed_by_bot = action.select().where(action.action == "follow")\
             .where(action.registered_user == self.registered_user)\
                 .limit(min(limit, 10))
         
         for act_on_followee in followed_by_bot:
-            if datetime.datetime.now() - datetime.timedelta(days=FOLLOWER_LIFESPAN) < act_on_followee.created:
+            if datetime.datetime.now() - datetime.timedelta(days=FOLLOWER_LIFESPAN) > act_on_followee.created:
                 if action_arg.get(action_arg.action == act_on_followee).follow \
                      in self.followings and self.unfollowing_left > 0:
                         self.t.unfollow(act_arg.follow.followed.username)
                         self.unfollowing_left = self.unfollowing_left - 1
+                        
+    def reduce_followings_who_dont_follow_back(self):
+        pass
     
     def load_followers_from_hashtag(self, hashtag):
         # Get a list of followers that im interested in
@@ -67,9 +71,13 @@ class registered_user_manager:
     
     def follow(self, followees):
         for followee in followees:
-            if self.following_left > 0:
+            if self.following_left <= 0:
+                continue
+            
                 self.t.follow(followee.replace("@",""))
                 self.following_left = self.following_left - 1
+            logger.info("Username:{0} followed {1}".format(self.registered_user.username, followee.replace("@","")))
+                
                 
 #r = registered_user_manager(TEST_USERNAME, TEST_PASSWORD)
 #interesting_fols = r.load_followers_from_hashtag()
