@@ -60,7 +60,7 @@ class Hastag(BaseModel):
 class action_arg(BaseModel):
     action = ForeignKeyField(action, backref='action_args')
     name = TextField(default = "")
-    follow = ForeignKeyField(Follower, backref='action_args', default=None, null = True)
+    followee = TextField(default = "", null = True) #ForeignKeyField(Follower, backref='action_args', default=None, null = True)
     #scrape_class = ForeignKeyField(scrape_class, backref='action_args', default=None)
     tweet = ForeignKeyField(Tweet, backref='action_args', default=None, null=True)
 
@@ -81,7 +81,7 @@ def log_action(action_type, registered_user, arg = None):
         act = action.create(action = action_type, registered_user = registered_user)
         
         if action_type == "follow" or action_type == "unfollow":
-            act_arg = action_arg.create(action = act, follow = arg)
+            act_arg = action_arg.create(action = act, followee = arg)
         elif action_type == "scrape_class":
             act_arg = action_arg.create(action = act, scraped_class = arg)
         elif action_type == "tweet":

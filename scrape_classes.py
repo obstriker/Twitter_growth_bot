@@ -150,9 +150,10 @@ class tweet_scrape_classes:
 
         if initial:
             self.driver.get(TWITTER_SEARCH_URL.format("\"vaccine\" (from:Shadowhisper1)"))
-            sleep(3)
+            sleep(5)
             username = self.find_static_username_class("@ShadoWhisper1")
             article = username[1]
+            sleep(0.3)
 
             while article.tag_name != "article":
                 article = article.find_element_by_xpath("..")

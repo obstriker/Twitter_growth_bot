@@ -12,6 +12,8 @@ parser.add_argument("--password", help="The password that you want to promote", 
 parser.add_argument("--follow-list", help="Follow this list as follow/unfollow technique", type=str)
 parser.add_argument("--follow-unfollow", help="use the follow/unfollow technique", type=str)
 parser.add_argument("--hashtag", help="Hashtag for interest discovery", type=str)
+parser.add_argument("--reduce", help="Reduce followers who don't follow back - \
+    used for debug or specific actions purpose", type=bool)
 args = parser.parse_args()
     
 
@@ -27,15 +29,21 @@ def follow_unfollow_technique(username, password, hashtags, \
     r.unfollow_followed_people()
 
 
-def main():
-    if 'follow-list' in args.__dict__.keys():
-        pass
-    elif 'unfollow-list' in args.__dict__.keys():
-        pass
+def reduce_followers(username, password,
+     unfollow_per_day_limit = MAX_UNFOLLOW_PER_DAY,
+     max_unfollow_overall = MAX_OVERALL_FOLLOW):
+    r = registered_user_manager(username, password)
+    r.reduce_followings_who_dont_follow_back(limit = 10) 
+    
 
-    #if 'follow-unfollow' in args.keys():
-    if 'hashtag' in args.__dict__.keys() and args.hashtag:
+def main():
+    if args.follow_list:
+        pass
+    
+    if args.hashtag:
         follow_unfollow_technique(args.username, args.password, args.hashtag)
+    elif args.reduce:
+        reduce_followers(args.username, args.password, args.hashtag)
 
 
 if __name__ == "__main__":

@@ -144,12 +144,13 @@ class twitter_browser_wrapper:
                 follower = User.get_or_create(username = self.username)[0]
                 followed = User.get_or_create(username = username)[0]
                 f = Follower.get_or_create(follower = follower , followed = followed)[0]
-                log_action("follow", self.registered_user, f)
+                log_action("follow", self.registered_user, username)
                 
                 return True
 
     def unfollow(self, username):
         self.driver.get(TWITTER_BASE_URL + username)
+        sleep(0.4) # wait for page to load
         unfollow_btn_opponents = None
 
         # Check if this works
@@ -158,10 +159,23 @@ class twitter_browser_wrapper:
             for unfollow_btn in unfollow_btn_opponents:
                 if unfollow_btn.get_attribute("aria-label") == ("Following @" + username):
                     unfollow_btn.click()
-                    f = Follower.remove(Follower.select().where(\
+                    sleep(0.5)
+                    elem = self.driver.find_element_by_tag_name("body")
+                    elem.send_keys(Keys.TAB)
+                    sleep(0.5)
+                    elem.send_keys(Keys.TAB)
+                    sleep(0.5)
+                    elem.send_keys(Keys.ENTER)
+                    sleep(0.5)
+                    
+                    try:
+                        f = Follower.remove(Follower.select().where(\
                         Follower.follower.contains(self.username) and \
                         Follower.followed.contains(username)))
-                    log_action("unfollow", self.registered_user, f)
+                    except:
+                        pass
+                    
+                    log_action("unfollow", self.registered_user, username)
                     
                     return True
 
@@ -223,8 +237,8 @@ class twitter_browser_wrapper:
                 followed = User.get_or_create(username = username)[0]
                 f = Follower.get_or_create(follower = follower, followed = followed)[0]
                 
-                if f not in extracted_followers:
-                    extracted_followers.append(f)
+                if follower.username not in extracted_followers:
+                    extracted_followers.append(follower.username)
                     followers_growing = True
 
             #Scroll down to find more tweets
@@ -234,7 +248,7 @@ class twitter_browser_wrapper:
 
         return extracted_followers
 
-    def get_username_followings(self, username, limit = 100):
+    def get_username_followings(self, username, limit = FOLLOWINGS_LIMIT):
         extracted_following = []
         following_growing = True
 
@@ -260,8 +274,8 @@ class twitter_browser_wrapper:
                 f = Follower.get_or_create(follower = follower, \
                     followed = followed)[0]
                 
-                if f not in extracted_following:
-                    extracted_following.append(f)
+                if followed.username not in extracted_following:
+                    extracted_following.append(followed.username)
                     following_growing = True
 
             #Scroll down to find more tweets
