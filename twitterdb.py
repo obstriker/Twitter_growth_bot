@@ -57,6 +57,12 @@ class Hastag(BaseModel):
     name = TextField(unique=True)
     domain = TextField()
     
+class scrape_class(BaseModel):
+    created = DateTimeField(default=datetime.datetime.now)
+    component_name = TextField(default = "")
+    class_name = TextField(default = "")
+    
+    
 class action_arg(BaseModel):
     action = ForeignKeyField(action, backref='action_args')
     name = TextField(default = "")
@@ -74,7 +80,7 @@ def insert_users(usernames):
         insert_user(username)
 
 def create_tables():
-    db.create_tables([User, Tweet, Follower, registered_user, User, action, action_arg], safe=True)
+    db.create_tables([User, Tweet, Follower, registered_user, User, action, action_arg, scrape_class], safe=True)
     
 def log_action(action_type, registered_user, arg = None):
     try:

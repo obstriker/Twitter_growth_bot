@@ -115,7 +115,7 @@ class registered_user_manager:
                 
         for act_on_followee in followed_by_bot:
             for act_arg in act_on_followee.action_args:
-                if act_arg.followee in already_unfollowed_users:
+                if act_arg.followee in unfollowed_by_bot:
                     continue
             
             act_follower = Follower.get(Follower.follower == User.get_or_create(username = self.registered_user.username)[0] and\
@@ -139,9 +139,6 @@ class registered_user_manager:
                     self.t.unfollow(followee)
                     self.following_left -= 1
                     limit -= 1
-                        
-                    
-                
     
     def load_followers_from_hashtag(self, hashtag, limit = MAX_FOLLOWING_PER_DAY):
         # Get a list of followers that im interested in

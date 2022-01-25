@@ -57,7 +57,7 @@ class twitter_interest_discovery:
             
             followers = t.get_username_followers(user.username)
             for follower in followers:
-                followers_from_hashtag.append(follower.follower.username)
+                followers_from_hashtag.append(follower)
         return list(set(followers_from_hashtag))
 
 #t = twitter_browser_wrapper()

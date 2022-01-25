@@ -3,6 +3,18 @@ from time import sleep
 import re
 from twitterdb import *
 
+def get_component_class_from_last_week(component_name):
+    last_week = datetime.datetime.now() - datetime.timedelta(days = 7)
+        
+    component_class = scrape_class.select().where(scrape_class.component_name == component_name)\
+        .order_by(scrape_class.created)\
+        .where(scrape_class.created > last_week)
+        
+    if not component_class:
+        return ""
+    
+    return list(component_class)[0].class_name
+
 class twitter_user_scrape_classes:
     def __init__(self, driver):
         self.driver = driver
@@ -16,6 +28,10 @@ class twitter_user_scrape_classes:
 #Another way to implement this is by using dictionary and counting which class has the most objects
 # This indicates on the Follow buttons on the followers 
     def find_static_followers_class(self, username = TEST_USERNAME2):
+        followers_class = get_component_class_from_last_week("followers_class")
+        if followers_class:
+            return followers_class
+        
         self.driver.get(USERNAME_FOLLOWERS_URL.format(username))
         sleep(4)
         followers = self.driver.find_elements_by_xpath("//span[contains(., '@')]")
@@ -28,9 +44,14 @@ class twitter_user_scrape_classes:
             
                 if follower.get_attribute("data-testid") == "UserCell":
                     self.followers = follower.get_attribute("class")
+                    scrape_class.create(class_name = self.followers, component_name = "followers_class")
                     return self.followers
 
     def find_static_following_class(self):
+        following_class = get_component_class_from_last_week("followings_class")
+        if following_class:
+            return following_class
+        
         self.driver.get(USERNAME_FOLLOWING_URL.format(TEST_USERNAME2))
         sleep(4)
         following = self.driver.find_elements_by_xpath("//span[contains(., '@')]")
@@ -43,6 +64,7 @@ class twitter_user_scrape_classes:
             
                 if followee.get_attribute("data-testid") == "UserCell":
                     self.following = followee.get_attribute("class")
+                    scrape_class.create(class_name = self.following, component_name = "followings_class")
                     return self.following
 
     #TODO: extend to include all followers
@@ -96,6 +118,7 @@ class tweet_scrape_classes:
         for user in usernames:
             if user.get_attribute("innerText") == username:
                 self.username = user.get_attribute("class")
+                scrape_class.create(class_name = self.username, component_name = "username_class")
                 return (self.username, user)
                 
     def find_relative_username(self, article):
@@ -131,6 +154,7 @@ class tweet_scrape_classes:
         for date in dates:
             if date.get_attribute("innerText") == "Dec 12":
                 self.date = date.get_attribute("class")
+                scrape_class.create(class_name = self.date, component_name = "time_class")
                 return self.date
 
     def find_static_description_class(self):
@@ -143,10 +167,15 @@ class tweet_scrape_classes:
                 if description.get_attribute("innerText") == "Vaccine for Log4shell\n#log4j #Log4Shell":
                     if len(description.get_attribute("class")) > len(self.description):
                         self.description = description.get_attribute("class")
+                        
+            scrape_class.create(class_name = self.description, component_name = "description_class")
             return (self.description, description)
 
     def find_static_block(self, initial=True):
         article = None
+        block_class = get_component_class_from_last_week("block_class")
+        if block_class:
+            return block_class
 
         if initial:
             self.driver.get(TWITTER_SEARCH_URL.format("\"vaccine\" (from:Shadowhisper1)"))
@@ -159,6 +188,7 @@ class tweet_scrape_classes:
                 article = article.find_element_by_xpath("..")
 
             self.block = article.get_attribute("class")
+            scrape_class.create(class_name = self.block, component_name = "block_class")
             return self.block
 
     #TODO: fix description fetching, try to fetch lines until they meet regex of \n\d
