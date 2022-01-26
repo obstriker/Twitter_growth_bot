@@ -21,7 +21,6 @@ class registered_user(BaseModel):
     password = TextField()
     #desired_followers = NumericField()
 
-
 class action(BaseModel):
     created = DateTimeField(default=datetime.datetime.now)
     action = TextField()
@@ -100,6 +99,36 @@ def log_action(action_type, registered_user, arg = None):
     
     except:
         return False
+
+def username_unfollowed_before(ruser, unfollowee):
+    unfollowed_by_bot = list(action.select().join(action_arg).where(action.action == "unfollow")\
+        .where(action.registered_user == ruser)
+        .where(action_arg.followee == unfollowee))
+    
+    return len(unfollowed_by_bot) > 0        
+
+def username_followed_before(ruser, followee):
+    followed_by_bot = list(action.select().join(action_arg).where(action.action == "follow")\
+        .where(action.registered_user == ruser)
+        .where(action_arg.followee == followee))
+    
+    return len(followed_by_bot) > 0    
+    
+def get_users_unfollowed_by_bot(self, limit):
+    followees = []
+    unfollowed_by_bot = action.select().where(action.action == "unfollow")\
+        .where(action.registered_user == self.registered_user)\
+            .limit(min(limit, 10))
+    
+    for followee in unfollowed_by_bot:
+        try:
+            followee_username = list(followee.action_args)[0].followee
+            followees.append(followee_username)
+        except:
+            continue
+        
+    return followees
+      
     
 def main():
     create_tables()

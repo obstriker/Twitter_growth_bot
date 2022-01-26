@@ -20,8 +20,9 @@ import urllib
 import hashlib
 from twitterdb import Tweet, User, Follower
 from scrape_classes import *
-from twitterdb import log_action
+from twitterdb import log_action, username_unfollowed_before
 from config import *
+import random
 
 opts = Options()
 opts.headless = False
@@ -42,6 +43,9 @@ ch.setFormatter(formatter)
 # add the handlers to the logger
 logger.addHandler(fh)
 logger.addHandler(ch)
+
+def random_sleep(sleep_time):
+    return random.uniform(sleep_time * 0.8, sleep_time * 1.2)
 
 class twitter_browser_wrapper:
     driver = None
@@ -96,18 +100,18 @@ class twitter_browser_wrapper:
         # Can be changed or blocked overtime
         self.driver.get(TWITTER_SIGN_IN_URL)
         elem = self.driver.find_element_by_tag_name("body")
-        sleep(5)
+        random_sleep(5)
         for i in range(0,3):
             elem.send_keys(Keys.TAB)
 
         elem.send_keys(username)
-        sleep(0.5)
+        random_sleep(0.5)
         elem.send_keys(Keys.ENTER)
-        sleep(1)
+        random_sleep(1)
         elem.send_keys(password)
-        sleep(0.5)
+        random_sleep(0.5)
         elem.send_keys(Keys.ENTER)
-        sleep(1)
+        random_sleep(1)
 
         if self._twitter_browser_wrapper__check_for_login_indicator(username):
             self._twitter_browser_wrapper__save_cookies(COOKIE_FILENAME_FORMAT.format(username))
@@ -134,194 +138,200 @@ class twitter_browser_wrapper:
 # Future:
 # human-like behaviour (scrolling, clickling, pause times)
     def follow_his_followers(self, username, limit = 40):
+        if not self.logged_in:
+             return []
+         
         self.driver.get(USERNAME_FOLLOWERS_URL.format(username))
         follow_btn_opponents = None
+        followees_growing = True
 
-        sleep(2)
-        # Check if this works
+        random_sleep(2)
+         
         while followees_growing and limit > 0:
-            followers_growing = False
+            followees_growing = False
             follow_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Follow')]")
 
             for follow_btn in follow_btn_opponents:
-                if "Follow @" not in follow_btn.get_attribute("aria-label"):
+                if limit < 1:
+                    break
+                try:
+                    if "Follow @" not in str(follow_btn.get_attribute("aria-label")):
                     continue
                 
                 username = follow_btn.get_attribute("aria-label").split("@")[1]
 
-                # if username has been followed before -> continue 
+                    if username_followed_before(self.registered_user, username):
+                        continue
+                    
                 # follow username
+                    follow_btn.click()
+                    limit -= 1
+                    
                 # create follow record & followees_growing = True
+                    log_action("follow", self.registered_user, username)
 
-
-#                followee = User.get_or_create(username = followee.replace("@",""))[0]
-#                followed = User.get_or_create(username = username)[0]
-#                f = Follower.get_or_create(follower = followee, followed = followed)[0]
-                
-#                if followee.username not in extracted_followers:
-#                    extracted_followers.append(followee.username)
-                    # Follow the username and add to DB
-#                    followers_growing = True
+                    followees_growing = True
+                    random_sleep(FOLLOW_COOLDOWN)
+                except:
+                    continue
 
             #Scroll down to find more tweets
             elem = self.driver.find_element_by_tag_name("body")
             elem.send_keys(Keys.END)
-            sleep(SCROLL_PAUSE_TIME)
+            random_sleep(SCROLL_PAUSE_TIME)
 
-        follow_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Follow')]")
-        for follow_btn in follow_btn_opponents:
-            if "Follow @" in follow_btn.get_attribute("aria-label"):
-                username = follow_btn.get_attribute("aria-label").split("@")[1]
-                # Check username with DB, if it's okay continue.
-                follow_btn.click()
+    def unfollow(self, username_to_unfollow):
+        if not self.logged_in:
+             return []
                 
-                followee = User.get_or_create(username = self.username)[0]
-                followed = User.get_or_create(username = username)[0]
-                f = Follower.get_or_create(follower = followee , followed = followed)[0]
-                log_action("follow", self.registered_user, username)
+        if self.driver.current_url != USERNAME_FOLLOWING_URL.format(self.username):
+            self.driver.get(USERNAME_FOLLOWING_URL.format(self.username))
                 
-                # Decrease limit variable
-
-                return True
-
-    def unfollow(self, username):
-        self.driver.get(TWITTER_BASE_URL + username)
-        sleep(0.4) # wait for page to load
         unfollow_btn_opponents = None
+        unfollowees_growing = True
 
-        # Check if this works
-        unfollow_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Following')]")
-        if unfollow_btn_opponents:
+        random_sleep(2)
+
+        highest_unfollow_btns = 0
+
+        while unfollowees_growing:
+            unfollowees_growing = False
+            unfollow_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Follow')]")
+
+            if len(unfollow_btn_opponents) > highest_unfollow_btns:
+                highest_unfollow_btns = len(unfollow_btn_opponents)
+                unfollowees_growing = True
+            
             for unfollow_btn in unfollow_btn_opponents:
-                if unfollow_btn.get_attribute("aria-label") == ("Following @" + username):
+                try:
+                    if "Following @" not in str(unfollow_btn.get_attribute("aria-label")):
+                        continue
+                
+                    discovered_username = unfollow_btn.get_attribute("aria-label").split("@")[1]
+                    
+                    if discovered_username != username_to_unfollow:
+                        continue
+                    
+                    # follow username
                     unfollow_btn.click()
-                    sleep(0.5)
+                    random_sleep(0.5)
                     elem = self.driver.find_element_by_tag_name("body")
                     elem.send_keys(Keys.TAB)
-                    sleep(0.5)
+                    random_sleep(0.5)
                     elem.send_keys(Keys.TAB)
-                    sleep(0.5)
+                    random_sleep(0.5)
                     elem.send_keys(Keys.ENTER)
-                    sleep(0.5)
+                    random_sleep(0.5)
                     
-                    try:
-                        f = Follower.remove(Follower.select().where(\
-                        Follower.follower.contains(self.username) and \
-                        Follower.followed.contains(username)))
-                    except:
-                        pass
-                    
-                    log_action("unfollow", self.registered_user, username)
-                    
+                    # create follow record & followees_growing = True
+                    log_action("unfollow", self.registered_user, discovered_username)
+                    print("unfollowed {0}".format(discovered_username))
                     return True
 
-
-    def follow_username_followers(self, username, limit = 100):
-        extracted_followers = []
-        followers_growing = True
-
-        if not self.logged_in:
-             return []
-        
-        if not hasattr(self, 'scm'):
-            self.scm = scrape_class_manager(self.driver)
-            
-        if not self.scm.tscu.followers:
-            self.scm.tscu.find_static_followers_class()
-
-        self.driver.get(USERNAME_FOLLOWERS_URL.format(username))
-        sleep(3)
-
-        while followers_growing and len(extracted_followers) < limit:
-            followers_growing = False
-            followers = self.scm.tscu.find_relative_followers_class(username.replace("@",""))
-
-            for follower in followers:
-                follower = User.get_or_create(username = follower.replace("@",""))[0]
-                followed = User.get_or_create(username = username)[0]
-                f = Follower.get_or_create(follower = follower, followed = followed)[0]
-                
-                if follower.username not in extracted_followers:
-                    extracted_followers.append(follower.username)
-                    # Follow the username and add to DB
-                    followers_growing = True
+                except:
+                    continue
 
             #Scroll down to find more tweets
             elem = self.driver.find_element_by_tag_name("body")
             elem.send_keys(Keys.END)
-            sleep(SCROLL_PAUSE_TIME)
+            random_sleep(SCROLL_PAUSE_TIME)
 
-        return extracted_followers
-
-    def get_username_followings(self, username, limit = FOLLOWINGS_LIMIT):
-        extracted_following = []
-        following_growing = True
-
+    def unfollow_batch(self, usernames_to_unfollow):
         if not self.logged_in:
              return []
         
-        if not hasattr(self, 'scm'):
-            self.scm = scrape_class_manager(self.driver)
-            
-        if not self.scm.tscu.following:
-            self.scm.tscu.find_static_following_class()
-
-        self.driver.get(USERNAME_FOLLOWING_URL.format(username))
-        sleep(3)
-
-        while following_growing and len(extracted_following) < limit:
-            following_growing = False
-            following = self.scm.tscu.find_relative_following_class(username)
-
-            for followee in following:
-                followed = User.get_or_create(username = followee.replace("@",""))[0]
-                follower = User.get_or_create(username = username)[0]
-                f = Follower.get_or_create(follower = follower, \
-                    followed = followed)[0]
+        if self.driver.current_url != USERNAME_FOLLOWING_URL.format(self.username):
+            self.driver.get(USERNAME_FOLLOWING_URL.format(self.username))
                 
-                if followed.username not in extracted_following:
-                    extracted_following.append(followed.username)
-                    following_growing = True
+        unfollow_btn_opponents = None
+        unfollowees_growing = True
+
+        random_sleep(2)
+
+        highest_unfollow_btns = 0
+
+        while unfollowees_growing:
+            unfollowees_growing = False
+            unfollow_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Follow')]")
+
+            if len(unfollow_btn_opponents) > highest_unfollow_btns:
+                highest_unfollow_btns = len(unfollow_btn_opponents)
+                unfollowees_growing = True
+        
+            for unfollow_btn in unfollow_btn_opponents:
+                try:
+                    if "Following @" not in str(unfollow_btn.get_attribute("aria-label")):
+                        continue
+            
+                    discovered_username = unfollow_btn.get_attribute("aria-label").split("@")[1]
+
+                    if discovered_username not in usernames_to_unfollow:
+                        continue
+
+                    # follow username
+                    unfollow_btn.click()
+                    random_sleep(0.5)
+                    elem = self.driver.find_element_by_tag_name("body")
+                    elem.send_keys(Keys.TAB)
+                    random_sleep(0.5)
+                    elem.send_keys(Keys.TAB)
+                    random_sleep(0.5)
+                    elem.send_keys(Keys.ENTER)
+                    random_sleep(0.5)
+
+                    # create follow record & followees_growing = True
+                    log_action("unfollow", self.registered_user, discovered_username)
+                    print("unfollowed {0}".format(discovered_username))
+                    return True
+                
+                except:
+                    continue
 
             #Scroll down to find more tweets
             elem = self.driver.find_element_by_tag_name("body")
             elem.send_keys(Keys.END)
-            sleep(SCROLL_PAUSE_TIME)
+            random_sleep(SCROLL_PAUSE_TIME)
 
-        return extracted_following
-
+    def get_users_from_hashtag_undetected(self, hashtag, limit = 20):
+            scraped_users = []
+            mentions_growing = True
         
-    #TODO: how to load dynamic tweets? (click space and go down?)
-    def search_tweets(self, term, limit=20):
-        tweets = {}
-        tweets_growing = True
+            if not self.logged_in:
+                return -1
 
-        if self.logged_in:
-            if not hasattr(self, 'scm'):
-                self.scm = scrape_class_manager(self.driver)
+            self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(hashtag)))
                 
-            if not self.scm.tsc.block:
-                self.scm.tsc.find_static_block()
+            random_sleep(3)
 
-            self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(term)))
-            sleep(3)
+            while mentions_growing and len(scraped_users) < limit:
+                mentions_growing = False
+                mentions = list(set(re.findall("@\w+", self.driver.page_source)))
+                if not mentions:
+                    continue
 
-            while tweets_growing and len(tweets) < limit:
-                tweets_growing = False
-                articles = self.scm.tsc.find_relative_blocks()
+                if len(mentions) + len(scraped_users) > limit:
+                    mentions = mentions[: limit - len(scraped_users)]
                 
-                for article in articles:
-                    #Create tweet object
-                    tw = self.scm.tsc.article_to_tweet(article)
+                users_before = len(scraped_users)
+                scraped_users += mentions
+                scraped_users = list(set(scraped_users))
 
-                    #Check if this tweet exists in the list
-                    if hashlib.md5(tw.description.encode()).hexdigest() not in tweets.keys():
-                        tweets[hashlib.md5(tw.description.encode()).hexdigest()] = tw
-                        tweets_growing = True
+                if len(scraped_users) > users_before:
+                    mentions_growing = True
 
                 #Scroll down to find more tweets
                 elem = self.driver.find_element_by_tag_name("body")
                 elem.send_keys(Keys.END)
-                sleep(SCROLL_PAUSE_TIME)
+                random_sleep(SCROLL_PAUSE_TIME)
 
-            return list(tweets.values())
+            return list(map(lambda user: user.replace("@",""), scraped_users))
+
+
+#t = twitter_browser_wrapper()
+#t.login("ShadoWhisper1", "Aa123456")
+#t.login(TEST_USERNAME, TEST_PASSWORD)
+#t.follow_his_followers("discord", limit = 20)
+#t.unfollow_his_followers("discord")
+#t.get_users_from_hashtag("#reversing")
+#t.unfollow("nabil_hedar")
+#t.unfollow("AccidentalCISO")
