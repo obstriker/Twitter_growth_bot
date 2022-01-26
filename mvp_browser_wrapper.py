@@ -141,6 +141,7 @@ class twitter_browser_wrapper:
         if not self.logged_in:
              return []
          
+        orig_limit = limit
         self.driver.get(USERNAME_FOLLOWERS_URL.format(username))
         follow_btn_opponents = None
         followees_growing = True
@@ -156,9 +157,9 @@ class twitter_browser_wrapper:
                     break
                 try:
                     if "Follow @" not in str(follow_btn.get_attribute("aria-label")):
-                    continue
+                        continue
                 
-                username = follow_btn.get_attribute("aria-label").split("@")[1]
+                    username = follow_btn.get_attribute("aria-label").split("@")[1]
 
                     if username_followed_before(self.registered_user, username):
                         continue
@@ -179,6 +180,8 @@ class twitter_browser_wrapper:
             elem = self.driver.find_element_by_tag_name("body")
             elem.send_keys(Keys.END)
             random_sleep(SCROLL_PAUSE_TIME)
+            
+        return orig_limit - limit
 
     def unfollow(self, username_to_unfollow):
         if not self.logged_in:

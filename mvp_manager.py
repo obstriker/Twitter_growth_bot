@@ -2,6 +2,8 @@ from mvp_browser_wrapper import *
 from config import *
 import config
 
+MAX_FOLLOWERS_ROOT_USERS = 3
+
 def get_users_followed_by_bot(reg_user, from_days_ago = FOLLOWER_LIFESPAN, limit = 40):
     followees = []
     two_weeks_ago = datetime.datetime.now() - datetime.timedelta(days = from_days_ago)
@@ -30,11 +32,14 @@ def follow_unfollow_technique(username, password, hashtag):
     global t
     t = twitter_browser_wrapper()
     t.login(username, password)
-    followees = t.get_users_from_hashtag_undetected(hashtag, limit = 1)
+    followees = t.get_users_from_hashtag_undetected(hashtag, limit = MAX_FOLLOWERS_ROOT_USERS)
+    limit = MAX_FOLLOWING_PER_DAY
     
     
     for followee in followees:
-        t.follow_his_followers(followee, limit = 4)
+        if limit <= 0:
+            break
+        limit -= t.follow_his_followers(followee, limit = MAX_FOLLOWING_PER_DAY/4)
         
     # TODO: Unfollow expired accounts
     unfollowees = get_users_followed_by_bot(t.registered_user)
