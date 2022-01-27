@@ -137,7 +137,7 @@ class twitter_browser_wrapper:
 # 
 # Future:
 # human-like behaviour (scrolling, clickling, pause times)
-    def follow_his_followers(self, username, limit = 40):
+    def follow_his_followers(self, username, limit = MAX_FOLLOW_HIS_FOLLOWERS):
         if not self.logged_in:
              return []
          
@@ -295,7 +295,7 @@ class twitter_browser_wrapper:
             elem.send_keys(Keys.END)
             random_sleep(SCROLL_PAUSE_TIME)
 
-    def get_users_from_hashtag_undetected(self, hashtag, limit = 20):
+    def get_users_from_hashtag_undetected(self, hashtag, limit = MAX_USERS_FROM_HASHTAG):
             scraped_users = []
             mentions_growing = True
         
