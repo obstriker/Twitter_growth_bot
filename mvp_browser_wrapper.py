@@ -71,7 +71,7 @@ class twitter_browser_wrapper:
     def __check_for_login_indicator(self, username):
         self.driver.get(TWITTER_HOMEPAGE_URL)
 
-        if "Notifications" in self.driver.page_source:
+        if 'aria-label="Direct Messages"' in self.driver.page_source:
             return True
         else:
             return False
@@ -127,6 +127,10 @@ class twitter_browser_wrapper:
             return True
         else:
             self.logged_in = False
+            
+            ans = input("Save cookies?")
+            if ans.lower() == 'y':
+                self._twitter_browser_wrapper__load_cookies(COOKIE_FILENAME_FORMAT.format(username))
             #log action - login failed
             return False
 
@@ -142,7 +146,7 @@ class twitter_browser_wrapper:
              return []
          
         orig_limit = limit
-        self.driver.get(USERNAME_FOLLOWERS_URL.format(username))
+        self.driver.get(USERNAME_FOLLOWERS_URL)
         follow_btn_opponents = None
         followees_growing = True
 
@@ -187,8 +191,8 @@ class twitter_browser_wrapper:
         if not self.logged_in:
              return []
                 
-        if self.driver.current_url != USERNAME_FOLLOWING_URL.format(self.username):
-            self.driver.get(USERNAME_FOLLOWING_URL.format(self.username))
+        if self.driver.current_url != USERNAME_FOLLOWING_URL:
+            self.driver.get(USERNAME_FOLLOWING_URL)
                 
         unfollow_btn_opponents = None
         unfollowees_growing = True
@@ -240,11 +244,12 @@ class twitter_browser_wrapper:
             random_sleep(SCROLL_PAUSE_TIME)
 
     def unfollow_batch(self, usernames_to_unfollow):
-        if not self.logged_in:
+        if not self.logged_in or \
+            not usernames_to_unfollow:
              return []
         
-        if self.driver.current_url != USERNAME_FOLLOWING_URL.format(self.username):
-            self.driver.get(USERNAME_FOLLOWING_URL.format(self.username))
+        if self.driver.current_url != USERNAME_FOLLOWING_URL:
+            self.driver.get(USERNAME_FOLLOWING_URL)
                 
         unfollow_btn_opponents = None
         unfollowees_growing = True
@@ -285,11 +290,11 @@ class twitter_browser_wrapper:
                     # create follow record & followees_growing = True
                     log_action("unfollow", self.registered_user, discovered_username)
                     print("unfollowed {0}".format(discovered_username))
-                    return True
-                
+
+                    random_sleep(1.2)
                 except:
                     continue
-
+                
             #Scroll down to find more tweets
             elem = self.driver.find_element_by_tag_name("body")
             elem.send_keys(Keys.END)
