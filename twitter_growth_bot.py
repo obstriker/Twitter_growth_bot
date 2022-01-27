@@ -15,7 +15,7 @@ parser.add_argument("-fu","--follow-unfollow", help="use the follow/unfollow tec
 parser.add_argument("-h","--hashtag", help="Hashtag for interest discovery", type=str)
 parser.add_argument("-f","-filename", help="Select filename that contains multiple accounts", type=str)
 parser.add_argument("-r","--reduce", help="Reduce followers who don't follow back - \
-    used for debug or specific actions purpose", type=bool)
+    used for debug or specific actions purpose", action='store_true')
 parser.add_argument("--mvp", help="enable mvp testing", action='store_true')
 args = parser.parse_args()
 
