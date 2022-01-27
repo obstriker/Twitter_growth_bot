@@ -45,7 +45,7 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 def random_sleep(sleep_time):
-    return random.uniform(sleep_time * 0.8, sleep_time * 1.2)
+    return sleep(random.uniform(sleep_time * 0.8, sleep_time * 1.2))
 
 class twitter_browser_wrapper:
     driver = None
