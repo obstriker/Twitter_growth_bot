@@ -25,6 +25,8 @@ def get_users_followed_by_bot(reg_user, from_days_ago = FOLLOWER_LIFESPAN, limit
     return followees
 
 def reduce_followings(t, limit = REDUCE_FOLLOWERS_LIMIT):
+    if not t.logged_in:
+        return -1
     unfollowees = get_users_followed_by_bot(t.registered_user, from_days_ago = -1, limit = limit)
     t.unfollow_batch(unfollowees)
 
@@ -32,7 +34,9 @@ def reduce_followings(t, limit = REDUCE_FOLLOWERS_LIMIT):
 def follow_unfollow_technique(username, password, hashtag):
     global t
     t = twitter_browser_wrapper()
-    t.login(username, password)
+    if not t.login(username, password):
+        return -1
+    
     followees = t.get_users_from_hashtag_undetected(hashtag, limit = MAX_USERS_FROM_HASHTAG)
     print("Found {0} people to follow their followers!".format(followees))
     limit = MAX_FOLLOWING_PER_DAY

@@ -128,10 +128,13 @@ class twitter_browser_wrapper:
         else:
             self.logged_in = False
             
-            ans = input("Save cookies?")
+            print("Login for {0} has failed.".format(username))
+            ans = input("Write 'y' if you want to manually login and save cookies?")
             if ans.lower() == 'y':
-                self._twitter_browser_wrapper__load_cookies(COOKIE_FILENAME_FORMAT.format(username))
-            #log action - login failed
+                self._twitter_browser_wrapper__save_cookies(COOKIE_FILENAME_FORMAT.format(username))
+                return True
+            
+            log_action("login failed", username)
             return False
 
 # minimum activities
@@ -305,7 +308,7 @@ class twitter_browser_wrapper:
             mentions_growing = True
         
             if not self.logged_in:
-                return -1
+                return []
 
             self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(hashtag)))
                 
