@@ -71,7 +71,7 @@ class twitter_browser_wrapper:
     def __check_for_login_indicator(self, username):
         self.driver.get(TWITTER_HOMEPAGE_URL)
 
-        if username in self.driver.page_source:
+        if "Notifications" in self.driver.page_source:
             return True
         else:
             return False
