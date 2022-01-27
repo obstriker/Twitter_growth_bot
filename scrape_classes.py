@@ -20,8 +20,8 @@ class twitter_user_scrape_classes:
         self.driver = driver
         self.follower_count = ""
         self.username = ""
-        self.followers = ""
-        self.following = ""
+        self.followers = get_component_class_from_last_week("followers_class")
+        self.following = get_component_class_from_last_week("followings_class")
         self.tweets = ""
 
 
@@ -100,17 +100,15 @@ class twitter_user_scrape_classes:
 class tweet_scrape_classes:
     def __init__(self, driver):
         self.driver = driver
-        self.follower = ""
-        self.following = ""
-        self.block = ""
-        self.username = ""
-        self.date = ""
-        self.description = ""
+        self.follower = get_component_class_from_last_week("followers_class")
+        self.following = get_component_class_from_last_week("followings_class")
+        self.block = get_component_class_from_last_week("block_class")
+        self.username = get_component_class_from_last_week("username_class")
+        self.date = get_component_class_from_last_week("date_class")
+        self.description = get_component_class_from_last_week("description_class")
         self.likes = ""
         self.retweets = ""
         self.comments = ""
-
-
 
     def find_static_username_class(self, username):
         usernames = self.driver.find_elements_by_xpath("//span[contains(., '"+ username +"')]")
@@ -176,7 +174,7 @@ class tweet_scrape_classes:
         block_class = get_component_class_from_last_week("block_class")
         if block_class:
             return block_class
-
+        
         if initial:
             self.driver.get(TWITTER_SEARCH_URL.format("\"vaccine\" (from:Shadowhisper1)"))
             sleep(5)
