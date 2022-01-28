@@ -18,9 +18,7 @@ from time import sleep
 import re
 import urllib
 import hashlib
-from twitterdb import Tweet, User, Follower
-from scrape_classes import *
-from twitterdb import log_action, username_unfollowed_before
+from twitterdb import *
 from config import *
 import random
 
@@ -84,7 +82,7 @@ class twitter_browser_wrapper:
         else:
             return False
 
-    def login(self, username, password):
+    def manual_login(self, username, password, saved_cookies_only = False):
         self.driver.get(TWITTER_HOMEPAGE_URL)
         if self._twitter_browser_wrapper__load_cookies(COOKIE_FILENAME_FORMAT.format(username)) \
             and self._twitter_browser_wrapper__check_for_login_indicator(username):
@@ -97,45 +95,21 @@ class twitter_browser_wrapper:
             # Log that login has been executed for user- username and save his preferences
             return True
 
-        # Can be changed or blocked overtime
-        self.driver.get(TWITTER_SIGN_IN_URL)
-        elem = self.driver.find_element_by_tag_name("body")
-        random_sleep(5)
-        for i in range(0,3):
-            elem.send_keys(Keys.TAB)
-
-        elem.send_keys(username)
-        random_sleep(0.5)
-        elem.send_keys(Keys.ENTER)
-        random_sleep(1)
-        elem.send_keys(password)
-        random_sleep(0.5)
-        elem.send_keys(Keys.ENTER)
-        random_sleep(1)
-
-        if self._twitter_browser_wrapper__check_for_login_indicator(username):
-            self._twitter_browser_wrapper__save_cookies(COOKIE_FILENAME_FORMAT.format(username))
-            self.logged_in = True
-            
-            #log action - login successfull manually
-            user = User.get_or_create(username = username)[0]
-            self.username = username # redundant
-            self.registered_user = registered_user.get_or_create(\
-                user = user, username = username, password = password)[0]
-            log_action("login", self.registered_user)
-            
-            return True
-        else:
-            self.logged_in = False
-            
-            print("Login for {0} has failed.".format(username))
-            ans = input("Write 'y' if you want to manually login and save cookies?")
-            if ans.lower() == 'y':
-                self._twitter_browser_wrapper__save_cookies(COOKIE_FILENAME_FORMAT.format(username))
-                return True
-            
-            log_action("login failed", username)
+        if saved_cookies_only:
             return False
+
+        print("Please login manually in order to begin.")
+        print("Login details are: {0}:{1}".format(username, password))
+        ans = input("To manually login press 'y': ")
+
+        if ans != 'y':
+            return False
+        input("Press enter when manual login has completed..")
+        self._twitter_browser_wrapper__save_cookies(COOKIE_FILENAME_FORMAT.format(username))
+            
+        return self.manual_login(username, password, saved_cookies_only = True)
+            
+            
 
 # minimum activities
 # limit feature
@@ -149,7 +123,7 @@ class twitter_browser_wrapper:
              return []
          
         orig_limit = limit
-        self.driver.get(USERNAME_FOLLOWERS_URL)
+        self.driver.get(USERNAME_FOLLOWERS_URL.format(username))
         follow_btn_opponents = None
         followees_growing = True
 
@@ -170,6 +144,10 @@ class twitter_browser_wrapper:
 
                     if username_followed_before(self.registered_user, username):
                         continue
+
+                    if username == self.registered_user.username:
+                            continue
+                    
                     
                 # follow username
                     follow_btn.click()
@@ -251,8 +229,8 @@ class twitter_browser_wrapper:
             not usernames_to_unfollow:
              return []
         
-        if self.driver.current_url != USERNAME_FOLLOWING_URL:
-            self.driver.get(USERNAME_FOLLOWING_URL)
+        if self.driver.current_url != USERNAME_FOLLOWING_URL.format(username):
+            self.driver.get(USERNAME_FOLLOWING_URL.format(username))
                 
         unfollow_btn_opponents = None
         unfollowees_growing = True
@@ -312,7 +290,7 @@ class twitter_browser_wrapper:
 
             self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(hashtag)))
                 
-            random_sleep(3)
+            random_sleep(3.2)
 
             while mentions_growing and len(scraped_users) < limit:
                 mentions_growing = False

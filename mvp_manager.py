@@ -1,8 +1,7 @@
 from mvp_browser_wrapper import *
 from config import *
 import config
-
-MAX_FOLLOWERS_ROOT_USERS = 3
+import datetime
 
 def get_users_followed_by_bot(reg_user, from_days_ago = FOLLOWER_LIFESPAN, limit = MAX_FOLLOWED_BY_BOT):
     followees = []
@@ -24,22 +23,21 @@ def get_users_followed_by_bot(reg_user, from_days_ago = FOLLOWER_LIFESPAN, limit
         
     return followees
 
-def reduce_followings(t, limit = REDUCE_FOLLOWERS_LIMIT):
+def reduce_followings(t, limit = MAX_UNFOLLOW_PER_DAY):
     if not t.logged_in:
         return -1
     unfollowees = get_users_followed_by_bot(t.registered_user, from_days_ago = -1, limit = limit)
     t.unfollow_batch(unfollowees)
 
 
-def follow_unfollow_technique(username, password, hashtag):
+def follow_unfollow_technique(username, password, hashtag, limit = MAX_FOLLOWING_PER_DAY):
     global t
     t = twitter_browser_wrapper()
-    if not t.login(username, password):
+    if not t.manual_login(username, password):
         return -1
     
     followees = t.get_users_from_hashtag_undetected(hashtag, limit = MAX_USERS_FROM_HASHTAG)
     print("Found {0} people to follow their followers!".format(followees))
-    limit = MAX_FOLLOWING_PER_DAY
     
     for followee in followees:
         if limit <= 0:
@@ -47,7 +45,7 @@ def follow_unfollow_technique(username, password, hashtag):
         limit -= t.follow_his_followers(followee, limit = MAX_FOLLOWING_PER_DAY/4)
         
     # TODO: Unfollow expired accounts
-    unfollowees = get_users_followed_by_bot(t.registered_user)
+    unfollowees = get_users_followed_by_bot(t.registered_user, limit = MAX_UNFOLLOW_PER_DAY)
     t.unfollow_batch(unfollowees)
     
     

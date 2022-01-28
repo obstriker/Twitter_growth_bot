@@ -4,7 +4,6 @@
 import argparse
 import sys
 from config import *
-from registered_user_manager import registered_user_manager
 import mvp_manager
 
 parser = argparse.ArgumentParser("twitter_growth_bot.py")
@@ -12,7 +11,7 @@ parser.add_argument("-u","--username", help="The username that you want to promo
 parser.add_argument("-p","--password", help="The password that you want to promote", type=str)
 parser.add_argument("--follow-list", help="Follow this list as follow/unfollow technique", type=str)
 parser.add_argument("-fu","--follow-unfollow", help="use the follow/unfollow technique", type=str)
-parser.add_argument("-h","--hashtag", help="Hashtag for interest discovery", type=str)
+parser.add_argument("--hashtag", help="Hashtag for interest discovery", type=str)
 parser.add_argument("-f","-filename", help="Select filename that contains multiple accounts", type=str)
 parser.add_argument("-r","--reduce", help="Reduce followers who don't follow back - \
     used for debug or specific actions purpose", action='store_true')
