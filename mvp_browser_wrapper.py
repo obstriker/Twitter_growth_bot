@@ -287,7 +287,8 @@ class twitter_browser_wrapper:
         
             if not self.logged_in:
                 return []
-
+            
+            random_sleep(4.2)
             self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(hashtag)))
                 
             random_sleep(3.2)
