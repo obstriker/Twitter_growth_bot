@@ -134,3 +134,4 @@ dmypy.json
 .idea/
 github_twitter_token.com
 twitter.db
+chromedriver
