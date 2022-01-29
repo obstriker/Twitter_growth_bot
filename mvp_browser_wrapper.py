@@ -12,6 +12,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 import os
+import sys
 import logging
 import pickle
 from time import sleep
@@ -48,10 +49,17 @@ def random_sleep(sleep_time):
 class twitter_browser_wrapper:
     driver = None
     def __init__(self):
-        self.driver = webdriver.Chrome(executable_path="/home/itayva/git/Twitter_growth_bot/chromedriver", chrome_options=opts)
+        if sys.platform == 'win32':
+            self.driver = webdriver.Chrome(executable_path=os.path.join(os.getcwd(), "chromedriver.exe"), options=opts)
+        else:
+            self.driver = webdriver.Chrome(executable_path=os.path.join(os.getcwd(), "chromedriver"), options=opts)
+            
         self.logged_in = False
         
     def __save_cookies(self, cookie_filename):
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            
         pickle.dump( self.driver.get_cookies() , open(cookie_filename,"wb"))
 
     #Does it check if it's exist?
