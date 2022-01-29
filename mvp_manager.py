@@ -43,7 +43,7 @@ def follow_unfollow_technique(username, password, hashtag, limit = MAX_FOLLOWING
         if limit <= 0:
             break
         limit -= t.follow_his_followers(followee, limit = MAX_FOLLOWING_PER_DAY/4)
-        
+        random_sleep(2)
     # TODO: Unfollow expired accounts
     unfollowees = get_users_followed_by_bot(t.registered_user, limit = MAX_UNFOLLOW_PER_DAY)
     t.unfollow_batch(unfollowees)
