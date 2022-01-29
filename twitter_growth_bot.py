@@ -38,7 +38,7 @@ def loop_accounts(filename):
             if not line:
                 contine
                 
-            line = line.split(":")
+            line = line.replace("\n","").split(":")
             if len(line) == 3:
                 mvp_follow_technique(line[0], line[1], line[2])
     
