@@ -10,7 +10,7 @@
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 import os
 import logging
 import pickle
@@ -48,7 +48,7 @@ def random_sleep(sleep_time):
 class twitter_browser_wrapper:
     driver = None
     def __init__(self):
-        self.driver = webdriver.Firefox(options=opts)
+        self.driver = webdriver.Chrome(executable_path="/home/itayva/git/Twitter_growth_bot/chromedriver", chrome_options=opts)
         self.logged_in = False
         
     def __save_cookies(self, cookie_filename):
@@ -60,7 +60,9 @@ class twitter_browser_wrapper:
             cookies = pickle.load(open(cookie_filename, "rb"))
         
             for cookie in cookies:
-                self.driver.add_cookie(cookie)
+                #self.driver.add_cookie(cookie)
+                # Works for chrome only
+                self.driver.execute_cdp_cmd('Network.setCookie', cookie) 
                 
             return True
         else:
@@ -83,7 +85,7 @@ class twitter_browser_wrapper:
             return False
 
     def manual_login(self, username, password, saved_cookies_only = False):
-        self.driver.get(TWITTER_HOMEPAGE_URL)
+        #self.driver.get("https://twitter.com/en/tos")
         if self._twitter_browser_wrapper__load_cookies(COOKIE_FILENAME_FORMAT.format(username)) \
             and self._twitter_browser_wrapper__check_for_login_indicator(username):
             self.logged_in = True
