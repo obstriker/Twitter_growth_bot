@@ -57,7 +57,7 @@ class twitter_browser_wrapper:
         self.logged_in = False
         
     def __save_cookies(self, cookie_filename):
-        if not os.path.exists(directory):
+        if not os.path.exists(cookie_filename):
             os.makedirs(directory)
             
         pickle.dump( self.driver.get_cookies() , open(cookie_filename,"wb"))
