@@ -16,6 +16,7 @@ parser.add_argument("-f","-filename", help="Select filename that contains multip
 parser.add_argument("-r","--reduce", help="Reduce followers who don't follow back - \
     used for debug or specific actions purpose", action='store_true')
 parser.add_argument("--mvp", help="enable mvp testing", action='store_true')
+parser.add_argument("--followees", help="target specific influencers", type=str)
 args = parser.parse_args()
 
 def reduce_followers(username, password,
@@ -28,8 +29,9 @@ def reduce_followers(username, password,
 def mvp_follow_technique(username, password, hashtag, \
      following_per_day_limit = MAX_FOLLOWING_PER_DAY,
      unfollow_per_day_limit = MAX_UNFOLLOW_PER_DAY,
-     max_follow_overall = MAX_OVERALL_FOLLOW):
-    mvp_manager.follow_unfollow_technique(username, password, hashtag)
+     max_follow_overall = MAX_OVERALL_FOLLOW,
+     followees = []):
+    mvp_manager.follow_unfollow_technique(username, password, hashtag, followees, limit = 0)
     #mvp_manager.reduce_followings(mvp_manager.t, limit = 5)
     
 def loop_accounts(filename):
@@ -46,12 +48,14 @@ def main():
     if args.follow_list:
         pass
     
+    followees = []
+    if args.followees: 
+        followees = args.followees.replace(" ", "").split(",")
+    
     if args.f:
         loop_accounts(args.f)
-    elif args.mvp:
-        mvp_follow_technique(args.username, args.password, args.hashtag)
-    elif args.hashtag:
-        follow_unfollow_technique(args.username, args.password, args.hashtag)
+    elif args.mvp and args.hashtag:
+        mvp_follow_technique(args.username, args.password, args.hashtag, followees = followees)
     elif args.reduce:
         reduce_followers(args.username, args.password, args.hashtag)
 

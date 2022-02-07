@@ -299,7 +299,8 @@ class twitter_browser_wrapper:
                 return []
             
             random_sleep(4.2)
-            self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(hashtag)))
+            #self.driver.get(TWITTER_SEARCH_URL.format(urllib.parse.quote(hashtag)))
+            self.driver.get(TWITTER_HASHTAG_CLICK_URL.format(urllib.parse.quote(hashtag)))
                 
             random_sleep(3.2)
 

@@ -19,6 +19,7 @@ USERNAME_FOLLOWERS_URL = "https://twitter.com/{0}/followers"
 USERNAME_FOLLOWING_URL = "https://twitter.com/{0}/following"
 COOKIE_FILENAME_FORMAT = "Cookies/user_{0}.pkl"
 COOKIES_ROOT_FOLDER = "Cookies/"
+TWITTER_HASHTAG_CLICK_URL = "https://mobile.twitter.com/hashtag/{0}?src=hashtag_click"
 
 # Test information
 TEST_USERNAME = "ohad02457744"

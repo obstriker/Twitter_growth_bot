@@ -30,14 +30,15 @@ def reduce_followings(t, limit = MAX_UNFOLLOW_PER_DAY):
     t.unfollow_batch(unfollowees)
 
 
-def follow_unfollow_technique(username, password, hashtag, limit = MAX_FOLLOWING_PER_DAY):
+def follow_unfollow_technique(username, password, hashtag, followees = [], limit = MAX_FOLLOWING_PER_DAY):
     global t
     t = twitter_browser_wrapper()
     if not t.manual_login(username, password):
         return -1
-    
+    if not followees:
     followees = t.get_users_from_hashtag_undetected(hashtag, limit = MAX_USERS_FROM_HASHTAG)
     print("Found {0} people to follow their followers!".format(followees))
+    
     
     for followee in followees:
         if limit <= 0:
