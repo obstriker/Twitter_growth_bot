@@ -57,8 +57,8 @@ class twitter_browser_wrapper:
         self.logged_in = False
         
     def __save_cookies(self, cookie_filename):
-        if not os.path.exists(cookie_filename):
-            os.makedirs(directory)
+        if not os.path.exists(COOKIES_ROOT_FOLDER):
+            os.makedirs(COOKIES_ROOT_FOLDER)
             
         pickle.dump( self.driver.get_cookies() , open(cookie_filename,"wb"))
 
@@ -114,6 +114,8 @@ class twitter_browser_wrapper:
 
         if ans != 'y':
             return False
+        
+        self.driver.get(TWITTER_SIGN_IN_URL)
         input("Press enter when manual login has completed..")
         self._twitter_browser_wrapper__save_cookies(COOKIE_FILENAME_FORMAT.format(username))
             
@@ -157,7 +159,6 @@ class twitter_browser_wrapper:
 
                     if username == self.registered_user.username:
                             continue
-                    
                     
                 # follow username
                     follow_btn.click()
@@ -234,13 +235,13 @@ class twitter_browser_wrapper:
             elem.send_keys(Keys.END)
             random_sleep(SCROLL_PAUSE_TIME)
 
-    def unfollow_batch(self, usernames_to_unfollow):
+    def unfollow_batch(self, usernames_to_unfollow, limit = MAX_UNFOLLOW_BATCH):
         if not self.logged_in or \
             not usernames_to_unfollow:
              return []
         
-        if self.driver.current_url != USERNAME_FOLLOWING_URL.format(username):
-            self.driver.get(USERNAME_FOLLOWING_URL.format(username))
+        if self.driver.current_url != USERNAME_FOLLOWING_URL.format(self.username):
+            self.driver.get(USERNAME_FOLLOWING_URL.format(self.username))
                 
         unfollow_btn_opponents = None
         reached_end_of_page = False
