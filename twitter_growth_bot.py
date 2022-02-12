@@ -31,7 +31,7 @@ def mvp_follow_technique(username, password, hashtag, \
      unfollow_per_day_limit = MAX_UNFOLLOW_PER_DAY,
      max_follow_overall = MAX_OVERALL_FOLLOW,
      followees = []):
-    mvp_manager.follow_unfollow_technique(username, password, hashtag, followees, limit = 0)
+    mvp_manager.follow_unfollow_technique(username, password, hashtag, followees)
     #mvp_manager.reduce_followings(mvp_manager.t, limit = 5)
     
 def loop_accounts(filename):
