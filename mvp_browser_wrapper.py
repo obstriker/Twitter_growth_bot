@@ -243,19 +243,22 @@ class twitter_browser_wrapper:
             self.driver.get(USERNAME_FOLLOWING_URL.format(username))
                 
         unfollow_btn_opponents = None
-        unfollowees_growing = True
+        reached_end_of_page = False
 
         random_sleep(2)
 
-        highest_unfollow_btns = 0
+#        highest_unfollow_btns = 0
+        lenOfPage = self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
 
-        while unfollowees_growing:
-            unfollowees_growing = False
+        while not reached_end_of_page:
+            reached_end_of_page = False
             unfollow_btn_opponents = self.driver.find_elements_by_xpath("//div[contains(., 'Follow')]")
 
-            if len(unfollow_btn_opponents) > highest_unfollow_btns:
-                highest_unfollow_btns = len(unfollow_btn_opponents)
-                unfollowees_growing = True
+            # For some reason it doesn't scroll until the end of the page
+#            if len(unfollow_btn_opponents) > highest_unfollow_btns:
+                
+#                highest_unfollow_btns = len(unfollow_btn_opponents)
+#                reached_end_of_page = True
         
             for unfollow_btn in unfollow_btn_opponents:
                 try:
@@ -267,28 +270,47 @@ class twitter_browser_wrapper:
                     if discovered_username not in usernames_to_unfollow:
                         continue
 
-                    # follow username
+                    if limit < 1:
+                        return
+                    limit -= 1
+                    
+                    # unfollow username
                     unfollow_btn.click()
-                    random_sleep(0.5)
-                    elem = self.driver.find_element_by_tag_name("body")
-                    elem.send_keys(Keys.TAB)
-                    random_sleep(0.5)
-                    elem.send_keys(Keys.TAB)
-                    random_sleep(0.5)
-                    elem.send_keys(Keys.ENTER)
-                    random_sleep(0.5)
+                    random_sleep(1)
+                    second_unfollow = self.driver.find_elements_by_xpath("//div[contains(., 'Unfollow')]")
+                    
+                    for btn in second_unfollow:
+                        if btn.get_attribute("data-testid") == "confirmationSheetConfirm":
+                            btn.click()
+                            break
+                        
+#                    random_sleep(0.5)
+#                    elem = self.driver.find_element_by_tag_name("body")
+#                    elem.send_keys(Keys.TAB)
+#                    random_sleep(0.5)
+#                    elem.send_keys(Keys.TAB)
+#                    random_sleep(0.5)
+#                    elem.send_keys(Keys.ENTER)
+#                    random_sleep(0.5)
 
                     # create follow record & followees_growing = True
                     log_action("unfollow", self.registered_user, discovered_username)
                     print("unfollowed {0}".format(discovered_username))
 
-                    random_sleep(1.2)
+                    random_sleep(FOLLOW_COOLDOWN)
                 except:
                     continue
                 
             #Scroll down to find more tweets
-            elem = self.driver.find_element_by_tag_name("body")
-            elem.send_keys(Keys.END)
+            
+            
+            lastCount = lenOfPage
+            lenOfPage = self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+            if lenOfPage == lastCount:
+                reached_end_of_page = True
+
+#            elem = self.driver.find_element_by_tag_name("body")
+#            elem.send_keys(Keys.END)
             random_sleep(SCROLL_PAUSE_TIME)
 
     def get_users_from_hashtag_undetected(self, hashtag, limit = MAX_USERS_FROM_HASHTAG):
