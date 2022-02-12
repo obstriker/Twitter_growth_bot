@@ -2,6 +2,7 @@ from mvp_browser_wrapper import *
 from config import *
 import config
 import datetime
+import random
 
 def get_users_followed_by_bot(reg_user, from_days_ago = FOLLOWER_LIFESPAN, limit = MAX_FOLLOWED_BY_BOT):
     followees = []
@@ -36,18 +37,18 @@ def follow_unfollow_technique(username, password, hashtag, followees = [], limit
     if not t.manual_login(username, password):
         return -1
     if not followees:
-    followees = t.get_users_from_hashtag_undetected(hashtag, limit = MAX_USERS_FROM_HASHTAG)
-    print("Found {0} people to follow their followers!".format(followees))
-    
+        followees = t.get_users_from_hashtag_undetected(hashtag, limit = MAX_USERS_FROM_HASHTAG)[:3]
+        random.shuffle(followees)
+        print("Found {0} people to follow their followers!".format(followees))
     
     for followee in followees:
         if limit <= 0:
             break
-        limit -= t.follow_his_followers(followee, limit = MAX_FOLLOWING_PER_DAY/4)
+        limit -= t.follow_his_followers(followee, limit = MAX_FOLLOWING_PER_DAY/min(4, len(followees)))
         random_sleep(2)
     # TODO: Unfollow expired accounts
-    unfollowees = get_users_followed_by_bot(t.registered_user, limit = MAX_UNFOLLOW_PER_DAY)
-    t.unfollow_batch(unfollowees)
+    unfollowees = get_users_followed_by_bot(t.registered_user, from_days_ago = FOLLOWER_LIFESPAN)
+    t.unfollow_batch(unfollowees, limit = MAX_UNFOLLOW_PER_DAY)
     
     
         
