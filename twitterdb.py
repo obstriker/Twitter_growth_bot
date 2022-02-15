@@ -18,7 +18,7 @@ class User(BaseModel):
 class registered_user(BaseModel):
     user = ForeignKeyField(User, backref='registered_users', unique = True)
     username = TextField()
-    password = TextField()
+    password = TextField(default="")
     #desired_followers = NumericField()
 
 class action(BaseModel):
