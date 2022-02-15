@@ -8,7 +8,7 @@ import mvp_manager
 
 parser = argparse.ArgumentParser("twitter_growth_bot.py")
 parser.add_argument("-u","--username", help="The username that you want to promote", type=str)
-parser.add_argument("-p","--password", help="The password that you want to promote", type=str)
+parser.add_argument("-p","--password", help="The password that you want to promote", default="", type=str)
 parser.add_argument("--follow-list", help="Follow this list as follow/unfollow technique", type=str)
 parser.add_argument("-fu","--follow-unfollow", help="use the follow/unfollow technique", type=str)
 parser.add_argument("--hashtag", help="Hashtag for interest discovery", type=str)
@@ -54,7 +54,7 @@ def main():
     
     if args.f:
         loop_accounts(args.f)
-    elif args.mvp and args.hashtag:
+    elif args.hashtag:
         mvp_follow_technique(args.username, args.password, args.hashtag, followees = followees)
     elif args.reduce:
         reduce_followers(args.username, args.password, args.hashtag)
