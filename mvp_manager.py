@@ -37,14 +37,15 @@ def follow_unfollow_technique(username, password, hashtag, followees = [], limit
     if not t.manual_login(username, password):
         return -1
     if not followees:
-        followees = t.get_users_from_hashtag_undetected(hashtag, limit = MAX_USERS_FROM_HASHTAG)[:3]
+        followees = t.get_users_from_hashtag_undetected(hashtag, limit = MAX_USERS_FROM_HASHTAG)[3:]          
         random.shuffle(followees)
+        
         print("Found {0} people to follow their followers!".format(followees))
     
     for followee in followees:
         if limit <= 0:
             break
-        limit -= t.follow_his_followers(followee, limit = MAX_FOLLOWING_PER_DAY/min(4, len(followees)))
+        limit -= t.follow_his_followers(followee, limit = MAX_FOLLOWING_PER_DAY/min(MAX_INFLUENCERS_TO_TARGET, len(followees)))
         random_sleep(2)
     # TODO: Unfollow expired accounts
     unfollowees = get_users_followed_by_bot(t.registered_user, from_days_ago = FOLLOWER_LIFESPAN)

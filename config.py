@@ -10,7 +10,9 @@ MAX_FOLLOW_HIS_FOLLOWERS = 20 # how much followers gathered
 MAX_FOLLOWING_PER_DAY = 28
 MAX_UNFOLLOW_PER_DAY = 20
 MAX_UNFOLLOW_BATCH = 20
-
+MAX_INFLUENCERS_TO_TARGET = 4
+MIN_DELAY_FACTOR = 0.8
+MAX_DELAY_FACTOR = 1.2
 # URLs
 TWITTER_BASE_URL = "https://mobile.twitter.com/"
 TWITTER_SIGN_IN_URL = "https://mobile.twitter.com/i/flow/login"

@@ -44,7 +44,7 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 def random_sleep(sleep_time):
-    return sleep(random.uniform(sleep_time * 0.8, sleep_time * 1.2))
+    return sleep(random.uniform(sleep_time * MIN_DELAY_FACTOR, sleep_time * MAX_DELAY_FACTOR))
 
 class twitter_browser_wrapper:
     driver = None
@@ -100,7 +100,7 @@ class twitter_browser_wrapper:
             self.username = username
             user = User.get_or_create(username = username)[0]
             self.registered_user = registered_user.get_or_create(\
-                user = user, username = username, password = password)[0]
+                user = user, username = username)[0]
             log_action("login", self.registered_user)
             # Log that login has been executed for user- username and save his preferences
             return True
@@ -348,7 +348,15 @@ class twitter_browser_wrapper:
                 elem.send_keys(Keys.END)
                 random_sleep(SCROLL_PAUSE_TIME)
 
-            return list(map(lambda user: user.replace("@",""), scraped_users))
+            users = list(map(lambda user: user.replace("@",""), scraped_users))
+            
+            ## TODO: Temporary fix
+            if "font" in users:
+                users.remove("font")
+            if "2x" in users:
+                users.remove("2x")
+                
+            return users
 
 
 #t = twitter_browser_wrapper()
